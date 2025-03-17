@@ -6,6 +6,7 @@ import ApiError from "../../api/backend-api/api-error";
 import FadeAlertError from "../@components/FadeAlertError/FadeAlertError";
 import FadeContainer from "../@components/FadeContainer/FadeContainer";
 import { Link } from "react-router";
+import AvailableEmailInput from "../@components/AvailableEmailInput/AvailableEmailInput";
 
 
 interface LoginFormType {
@@ -68,7 +69,7 @@ export default function LoginPage(): JSX.Element {
                     name="email"
                     rules={[{ required: true, message: "O campo e-mail é obrigatório" }]}
                 >
-                    <Input />
+                    <AvailableEmailInput />
                 </Form.Item>
                 <Form.Item<LoginFormType>
                     label="Senha"
