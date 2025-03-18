@@ -6,6 +6,7 @@ import ApiError from "../../api/backend-api/api-error";
 import FadeAlertError from "../@components/FadeAlertError/FadeAlertError";
 import FadeContainer from "../@components/FadeContainer/FadeContainer";
 import { Link } from "react-router";
+import ReadContainer from "../@components/ReadContainer/ReadContainer";
 
 
 interface LoginFormType {
@@ -14,6 +15,7 @@ interface LoginFormType {
 }
 
 export default function LoginPage(): JSX.Element {
+    window.document.title = "FPM Toolkit - Login"
     const appContext = useContext(AppContext)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
@@ -54,7 +56,7 @@ export default function LoginPage(): JSX.Element {
     }
 
     return (
-        <>
+        <ReadContainer>
             <Form
                 name="login-form"
                 labelCol={{ span: 8 }}
@@ -62,6 +64,7 @@ export default function LoginPage(): JSX.Element {
                 style={{ maxWidth: 600 }}
                 onFinish={authenticate}
                 autoComplete="true"
+                size="large"
             >
                 <Form.Item<LoginFormType>
                     label="Email"
@@ -94,6 +97,6 @@ export default function LoginPage(): JSX.Element {
                     </Flex>
                 </Form.Item>
             </Form>
-        </>
+        </ReadContainer>
     )
 }
