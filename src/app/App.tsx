@@ -10,6 +10,9 @@ import { NotificationInstance } from 'antd/es/notification/interface'
 import PasswordRecoveryPage from './password-recovery/PasswordRecoveryPage'
 
 interface AppContextType {
+  /**
+   * Notification instance. Used to show notifications to the user
+   */
   notification: NotificationInstance
 }
 
