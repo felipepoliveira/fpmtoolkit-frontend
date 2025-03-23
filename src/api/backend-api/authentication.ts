@@ -1,3 +1,4 @@
+import { UserModel } from "../../types/backend-api/user";
 import BackendApi from "./backend-api";
 
 /// Types
@@ -28,7 +29,7 @@ interface ApiAuthenticationTokenPayload {
 }
 
 /**
- * Request payload for [POST]/public/tokens/email-and-password service
+ * Request payload for [POST]/api/auth/public/tokens/email-and-password service
  */
 interface GenerateAuthenticationTokenWithEmailAndPasswordRequest {
     /**
@@ -42,7 +43,7 @@ interface GenerateAuthenticationTokenWithEmailAndPasswordRequest {
 }
 
 /**
- * Response payload for [POST]/public/tokens/email-and-password service
+ * Response payload for [POST]/api/auth/public/tokens/email-and-password service
  */
 interface GenerateAuthenticationTokenWithEmailAndPasswordResponse {
     /**
@@ -55,8 +56,26 @@ interface GenerateAuthenticationTokenWithEmailAndPasswordResponse {
     payload: ApiAuthenticationTokenPayload,
 }
 
+/**
+ * Response payload for [GET]/api/auth/public/access-emails/{email}/is-available
+ */
+interface IsEmailAvailableToUseResponse {
+    /**
+     * Flag that indicates if the email is available to use
+     */
+    isAvailable: boolean,
+}
+
 /// Services
 const AuthenticationService = {
+    fetchUserDataWithBearerToken: async (token: string): Promise<UserModel> => {
+        return (await BackendApi.get("/api/auth/me", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })).data
+    },
+
     /**
      * Generated a authentication token that can used as a session for the client
      * @param payload Payload used in the request
@@ -64,6 +83,15 @@ const AuthenticationService = {
      */
     generateAuthenticationTokenWithEmailAndPassword: async (payload: GenerateAuthenticationTokenWithEmailAndPasswordRequest): Promise<GenerateAuthenticationTokenWithEmailAndPasswordResponse> => {
         return (await BackendApi.post("/api/auth/public/tokens/email-and-password", payload)).data
+    },
+
+    /**
+     * Checks if the email is available to use
+     * @param email Email to check
+     * @returns {Promise<IsEmailAvailableToUseResponse>}
+     */
+    isEmailAvailableToUse: async (email: string): Promise<IsEmailAvailableToUseResponse> => {
+        return (await BackendApi.get(`/api/auth/public/access-emails/${email}/is-available`)).data
     }
 }
 

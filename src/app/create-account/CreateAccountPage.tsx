@@ -1,11 +1,13 @@
-import { JSX, useContext, useState } from "react";
+import { JSX, useContext, useEffect, useState } from "react";
 import ReadContainer from "../@components/ReadContainer/ReadContainer";
 import { Alert, App, Button, Flex, Form, FormProps, Input } from "antd";
 import UserService from "../../api/backend-api/user";
 import ApiError from "../../api/backend-api/api-error";
 import { AppContext } from "../App";
 import FadeContainer from "../@components/FadeContainer/FadeContainer";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import AvailableEmailInput, { EmailAvailabilityState } from "../@components/AvailableEmailInput/AvailableEmailInput";
+import PasswordInputWithStrengthChecker, { PasswordRank } from "../@components/PasswordInputWithStrengthChecker/PasswordInputWithStrengthChecker";
 
 interface CreateAccountFormType {
     presentationName: string,
@@ -18,14 +20,71 @@ export default function CreateAccountPage(): JSX.Element {
     window.document.title = "FPM Toolkit - Criar Conta"
     
     const appContext = useContext(AppContext)
-    const [error, setError] = useState<string | undefined>(undefined);
+    const navigate = useNavigate()
+    const [form] = Form.useForm();
+    const [emailAvailability, setEmailAvailability] = useState<EmailAvailabilityState>("unknown")
+    const [passwordRank, setPasswordRank] = useState<PasswordRank>('not-acceptable')
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        form.validateFields(["primaryEmail"])
+    }, [emailAvailability])
+
+    useEffect(() => {
+        form.validateFields(['password'])
+    }, [passwordRank])
+
+
+    /**
+     * Custom validator for confirmPassword field
+     */
+    const confirmPasswordValidator = (_: any, value: string) => {
+        if (form.getFieldValue('password') !== value) {
+            return Promise.reject("As senhas não conferem")
+        }
+
+        return Promise.resolve()
+    }
+
+    /**
+     * Custom validator for password field
+     */
+    const passwordValidator = (_: any, value: string) => {
+        if (value == undefined || !value.length) {
+            return Promise.reject("Este campo é obrigatório")
+        }
+
+        if (passwordRank == 'not-acceptable') {
+            return Promise.reject("Senha inválida pois foi considerada insegura")
+        }
+
+        return Promise.resolve()
+    }
+
+    /**
+     * Custom validator for email primaryEmail field
+     */
+    const primaryEmailValidator = (_: any, value: string) => {
+        if (value == undefined) {
+            return Promise.resolve()
+        }
+        if (emailAvailability === "available") {
+            return Promise.resolve()
+        }
+        else if (emailAvailability === "unavailable") {
+            return Promise.reject("O email inserido não está disponível")
+        }
+        else {
+            return Promise.reject("Insira um endereço de e-mail válido")
+        }
+    }
 
     const createUserAccount: FormProps<CreateAccountFormType>['onFinish'] = async (form) => {
 
         // reset component states
-        setError(undefined)
         setLoading(true)
+
+        const actionTimeout = 1200
 
         // create the user account
         UserService.createUser({
@@ -34,42 +93,66 @@ export default function CreateAccountPage(): JSX.Element {
             presentationName: form.presentationName,
             primaryEmail: form.primaryEmail
         })
-        .then(response => {
-            console.log(response)
+        .then(() => {
+            appContext.login({ email: form.primaryEmail, password: form.password })
+            .then(() => {
+                appContext.message.success({
+                    content: "Sua conta foi criada com sucesso. Bem-vindo ao FPM Toolkit!",
+                    duration: 5,
+                })
+                setTimeout(() => {
+                    navigate("/")
+                }, actionTimeout)
+            })
+            .catch(e => {
+                console.error(e)
+                appContext.message.error({
+                    content: "Lamentamos, mas ocorreu um erro ao iniciar sessão. Tente novamente mais tarde",
+                    duration: 3
+                })
+            })
         })
         .catch(e => {
             const error = new ApiError(e)
             if (error.errorType === "INVALID_PASSWORD") {
-                setError("O servidor considerou a senha insegura")
+                appContext.message.error({
+                    content: "O servidor considerou a senha insegura",
+                    duration: 3
+                })
             }
             else if (error.errorType === "INVALID_EMAIL") {
-                setError("E-mail inserido indisponível")
+                appContext.message.error({
+                    content: "E-mail inserido indisponível",
+                    duration: 3
+                })
             }
             else {
-                appContext.notification.error({
-                    message: "Erro ao criar conta",
-                    description: "Lamentamos, mas ocorreu um erro ao criar a conta. Tente novamente mais tarde"
+                appContext.message.error({
+                    content: "Lamentamos, mas ocorreu um erro ao criar a conta. Tente novamente mais tarde",
+                    duration: 3
                 })
             }
         })
         .finally(() => {
-            setLoading(false)
+            setTimeout(() => {
+                setLoading(false)
+            }, actionTimeout)
         })
     }
 
     return (
-        <ReadContainer>
+        <ReadContainer style={{ maxWidth: 600 }}>
             <Form
+                form={form}
                 name="login-form"
                 labelCol={{ span: 8 }}
                 wrapperCol={{ span: 16 }}
-                style={{ maxWidth: 600 }}
                 autoComplete="true"
                 size="large"
                 onFinish={createUserAccount}
             >
                 <Form.Item<CreateAccountFormType>
-                    label="Como quer ser chamado?"
+                    label="Como podemos te chamar?"
                     name="presentationName"
                     rules={[{ required: true, message: "Este campo é obrigatório" }]}
                 >
@@ -78,21 +161,21 @@ export default function CreateAccountPage(): JSX.Element {
                 <Form.Item<CreateAccountFormType>
                     label="Insira seu e-mail"
                     name="primaryEmail"
-                    rules={[{ required: true, message: "Este campo é obrigatório" }]}
+                    rules={[{ validator: primaryEmailValidator}]}
                 >
-                    <Input />
+                    <AvailableEmailInput onEmailAvailabilityChange={setEmailAvailability} />
                 </Form.Item>
                 <Form.Item<CreateAccountFormType>
                     label="Senha"
                     name="password"
-                    rules={[{ required: true, message: "Este campo é obrigatório" }]}
+                    rules={[{ validator: passwordValidator }]}
                 >
-                    <Input.Password />
+                    <PasswordInputWithStrengthChecker onPasswordRankChange={setPasswordRank} />
                 </Form.Item>
                 <Form.Item<CreateAccountFormType>
                     label="Repita sua senha"
                     name="confirmPassword"
-                    rules={[{ required: true, message: "Este campo é obrigatório" }]}
+                    rules={[{ validator: confirmPasswordValidator }]}
                 >
                     <Input.Password />
                 </Form.Item>
@@ -101,11 +184,6 @@ export default function CreateAccountPage(): JSX.Element {
                         Criar conta
                     </Button>
                 </Form.Item>
-                <FadeContainer show={error !== undefined} autoHideTimeout={6000} onAutoHide={() => setError(undefined)} doNotDisplayOnHide={true}>
-                    <Form.Item label={null}>
-                        <Alert type="error" showIcon message={error} />
-                    </Form.Item>
-                </FadeContainer>
                 <Form.Item label={null}>
                     <Flex justify="space-between">
                         <Link to="/login">Já tem uma conta?</Link>

@@ -1,81 +1,66 @@
-import { MailOutlined } from "@ant-design/icons";
+import { CheckOutlined, ExclamationCircleOutlined, MailOutlined } from "@ant-design/icons";
 import { Input, InputProps, Spin } from "antd";
-import { JSX, useState } from "react";
+import { ChangeEventHandler, useEffect, useRef, useState } from "react";
+import AuthenticationService from "../../../api/backend-api/authentication";
 
-/**
- * Properties for the AvailableEmailInput component.
- */
+export type EmailAvailabilityState = "available" | "unavailable" | "unknown" | "error";
+
 interface AvailableEmailInputProps extends InputProps {
-
+    value?: string; // Controlled value from Ant Design Form
+    onChange?: ChangeEventHandler<HTMLInputElement>; // Syncs with Form
+    onEmailAvailabilityChange?: (emailAvailability: EmailAvailabilityState) => void;
 }
 
-/**
- * The state of the AvailableEmailInput component.
- */
-type AvailableEmailInputState = "editing" | "checking" | "checked";
+const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-/**
- * The state of the email availability.
- */
-type EmailAvailableState = "available" | "unavailable";
+function AvailableEmailInput({ value = "", onChange, onEmailAvailabilityChange, ...props }: AvailableEmailInputProps) {
+    const [inputState, setInputState] = useState<"editing" | "checking" | "checked">("editing");
+    const [emailAvailableState, setEmailAvailableState] = useState<EmailAvailabilityState>("unknown");
 
-/**
- * A component that allows users to input an email address and checks if it is available.
- */
-export default function AvailableEmailInput(props: AvailableEmailInputProps): JSX.Element {
+    const lastCheckedEmail = useRef<string>("");
+    const emailAvailableDebounce = useRef<number | undefined>(undefined);
 
-    const [inputState, setInputState] = useState<AvailableEmailInputState>("editing");
-    const [emailAvailableState, setEmailAvailableState] = useState<EmailAvailableState>("available");
-
-    function checkEmailAvailability() {
-        setInputState("checking")
-    }
-
-    let onChangeTimeoutController : number | undefined = undefined
-    function onChange() {
-        setInputState("editing")
-        if (onChangeTimeoutController) {
-            clearTimeout(onChangeTimeoutController)
-            onChangeTimeoutController = undefined
-            console.log("Clearing timeout")
+    useEffect(() => {
+        if (!value || !emailRegex.test(value)) {
+            setInputState("editing");
+            onEmailAvailabilityChange?.("unknown");
+            return;
         }
-        onChangeTimeoutController = setTimeout(() => {
-            checkEmailAvailability()
-        }, 1200)
-    }
 
-    /**
-     * @returns The JSX element that represents the email availability state.
-     */
-    function EmailAvailabilityIdentifierAddon(): JSX.Element {
-        switch (inputState) {
-            case "editing": return <MailOutlined />
-            case "checking": return <Spin />
-            case "checked":
-                switch (emailAvailableState) {
-                    case "available":
-                        return <span style={{ color: "green" }}>✓</span>;
-                    case "unavailable":
-                        return <span style={{ color: "red" }}>✗</span>;
-                }
-        }
-    }
+        if (value === lastCheckedEmail.current) return;
+
+        setInputState("checking");
+        lastCheckedEmail.current = value;
+        if (emailAvailableDebounce.current) clearTimeout(emailAvailableDebounce.current);
+
+        emailAvailableDebounce.current = setTimeout(() => {
+            AuthenticationService.isEmailAvailableToUse(value)
+            .then(response => {
+                const availability = response.isAvailable ? "available" : "unavailable";
+                setEmailAvailableState(availability);
+                onEmailAvailabilityChange?.(availability);
+            })
+            .catch(() => {
+                setEmailAvailableState("error");
+                onEmailAvailabilityChange?.("error");
+            })
+            .finally(() => setInputState("checked"));
+        }, 1200);
+    }, [value]); // Triggers when the value changes
 
     return (
-        <Input {...props}
-            addonAfter={<EmailAvailabilityIdentifierAddon />}
-            onBlur={(event) => {
-                checkEmailAvailability()
-                if (props.onBlur) {
-                    props.onBlur(event)
-                }
-            }}
-            onChange={(event) => {
-                onChange()
-                if (props.onChange) {
-                    props.onChange(event)
-                }
-            }}
+        <Input
+            {...props}
+            value={value}
+            onChange={onChange} // Syncs with Form
+            addonAfter={
+                inputState === "checking" ? <Spin /> :
+                inputState === "checked" && emailAvailableState === "available" ? <CheckOutlined style={{ color: "green" }} /> :
+                inputState === "checked" && emailAvailableState === "unavailable" ? <ExclamationCircleOutlined style={{ color: "red" }} /> :
+                <MailOutlined />
+            }
         />
     );
 }
+
+export default AvailableEmailInput;

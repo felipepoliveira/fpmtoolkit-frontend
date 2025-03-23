@@ -1,12 +1,9 @@
-import { Alert, Button, Flex, Form, FormProps, Input, Layout } from "antd";
+import { Button, Flex, Form, FormProps, Input } from "antd";
 import { JSX, useContext, useState } from "react";
-import AuthenticationService from "../../api/backend-api/authentication";
-import { AppContext } from "../App";
+import { Link, useNavigate } from "react-router";
 import ApiError from "../../api/backend-api/api-error";
-import FadeContainer from "../@components/FadeContainer/FadeContainer";
-import { Link } from "react-router";
 import ReadContainer from "../@components/ReadContainer/ReadContainer";
-import AvailableEmailInput from "../@components/AvailableEmailInput/AvailableEmailInput";
+import { AppContext } from "../App";
 
 
 interface LoginFormType {
@@ -17,7 +14,8 @@ interface LoginFormType {
 export default function LoginPage(): JSX.Element {
     window.document.title = "FPM Toolkit - Login"
     const appContext = useContext(AppContext)
-    const [error, setError] = useState<string | null>(null)
+    const navigate = useNavigate()
+    const [form] = Form.useForm();
     const [loading, setLoading] = useState(false)
 
     /**
@@ -27,41 +25,56 @@ export default function LoginPage(): JSX.Element {
     const authenticate: FormProps<LoginFormType>['onFinish'] = (values) => {
         appContext.notification.destroy()
         setLoading(true)
+        const actionTimeout = 800
 
-        AuthenticationService.generateAuthenticationTokenWithEmailAndPassword({
-            primaryEmail: values.email,
+        appContext.login({
+            email: values.email,
             password: values.password
         })
-            .then(response => {
-                console.log(response)
+        .then((response) => {
+            appContext.message.success({
+                content: `Olá, ${response.userData.presentationName}`,
+                duration: 5
             })
-            .catch(e => {
-                const error = new ApiError(e)
-                if (error.errorType === "NOT_FOUND") {
-                    setError("Credencias inseridas inválidas")
-                }
-                else {
-                    appContext.notification.error({
-                        message: "Erro ao autenticar",
-                        description: "Lamentamos, mas ocorreu um erro ao autenticar. Tente novamente mais tarde"
-                    })
-                }
+            setTimeout(() => {
+                navigate("/")
+            }, actionTimeout)
+        })
+        .catch(e => {
+            const error = new ApiError(e)
+            if (error.errorType === "NOT_FOUND") {
+                appContext.message.warning({
+                    content: "Credencias inseridas inválidas",
+                    duration: 2
+                })
+            }
+            else {
+                appContext.message.error({
+                    content: "Credencias inseridas inválidas",
+                    duration: 2
+                })
+            }
 
-            })
-            .finally(() => {
-                setTimeout(() => {
-                    setLoading(false)
-                }, 800);
-            })
+        })
+        .finally(() => {
+            setTimeout(() => {
+                setLoading(false)
+            }, actionTimeout);
+        })
+    }
+
+    // store ReadContainer style for this page
+    const readContainerStyle: React.CSSProperties = {
+        maxWidth: 600
     }
 
     return (
-        <ReadContainer>
+        <ReadContainer style={readContainerStyle}>
             <Form
+                form={form}
                 name="login-form"
                 labelCol={{ span: 8 }}
                 wrapperCol={{ span: 16 }}
-                style={{ maxWidth: 600 }}
                 onFinish={authenticate}
                 autoComplete="true"
                 size="large"
@@ -69,9 +82,10 @@ export default function LoginPage(): JSX.Element {
                 <Form.Item<LoginFormType>
                     label="Email"
                     name="email"
-                    rules={[{ required: true, message: "O campo e-mail é obrigatório" }]}
+                    rules={[{ type: "email", message: "O campo email deve ser um email válido" }, { required: true, message: "O campo email é obrigatório" }]}
                 >
-                    <AvailableEmailInput />
+
+                    <Input />
                 </Form.Item>
                 <Form.Item<LoginFormType>
                     label="Senha"
@@ -85,15 +99,12 @@ export default function LoginPage(): JSX.Element {
                         Entrar
                     </Button>
                 </Form.Item>
-                <FadeContainer show={error !== null} autoHideTimeout={6000} onAutoHide={() => setError(null)} doNotDisplayOnHide={true}>
-                    <Form.Item label={null}>
-                        <Alert type="error" showIcon message={error} />
-                    </Form.Item>
-                </FadeContainer>
                 <Form.Item label={null}>
-                    <Flex justify="space-between">
-                        <Link to="/create-account">Criar conta</Link>
-                        <Link to="/password-recovery">Esqueceu sua senha?</Link>
+                    <Flex vertical>
+                        <Flex gap='large' wrap>
+                            <Link to="/create-account">Criar conta</Link>
+                            <Link to="/password-recovery">Esqueceu sua senha?</Link>
+                        </Flex>
                     </Flex>
                 </Form.Item>
             </Form>

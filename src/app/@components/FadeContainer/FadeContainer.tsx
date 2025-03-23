@@ -20,7 +20,6 @@ export default function FadeContainer(props: FadeContainerProps): JSX.Element {
         if (props.autoHideTimeout && props.onAutoHide && !autoHideTimeoutController) {
             
             autoHideTimeoutController = setTimeout(() => {
-                console.log("Calling to close")
                 props.onAutoHide?.()
             }, props.autoHideTimeout)
         }
