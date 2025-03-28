@@ -8,7 +8,7 @@ import { AuthenticatedAppContextType, UserSession } from "./types";
 import UserSessionStore from "../store/user-session";
 import SessionCredentialsStore from "../store/session-credentials";
 import { OrganizationModel } from "../types/backend-api/organization";
-import UserOrganizationsService from "../api/backend-api/me/UserOrganizationsService";
+import UserOrganizationsService from "../api/backend-api/me/user-organizations";
 
 // The authenticated app context instance
 const authenticatedAppContext: AuthenticatedAppContextType = {
@@ -84,7 +84,6 @@ export default function AuthLayout(): JSX.Element {
 
         // ignore the fetching process if it is already defined
         if (userOrganizations !== undefined) {
-            
             // if the authenticated user is not a member of any organization redirect it to the organization creation interface
             if (userOrganizations.length === 0) {
                 navigate('/organizations/create')
