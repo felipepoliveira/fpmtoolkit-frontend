@@ -1,9 +1,10 @@
-import { Button, Flex, Form, FormProps, Input } from "antd";
-import { JSX, useContext, useState } from "react";
+import { Button, Flex, Form, FormProps, Input, InputRef } from "antd";
+import { JSX, useContext, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import ApiError from "../../api/backend-api/api-error";
 import ReadContainer from "../@components/ReadContainer/ReadContainer";
 import { AppContext } from "../App";
+import { useLocation } from "react-router";
 
 
 interface LoginFormType {
@@ -13,10 +14,25 @@ interface LoginFormType {
 
 export default function LoginPage(): JSX.Element {
     window.document.title = "FPM Toolkit - Login"
+    const location = useLocation()
     const appContext = useContext(AppContext)
     const navigate = useNavigate()
-    const [form] = Form.useForm();
+    const [form] = Form.useForm<LoginFormType>();
     const [loading, setLoading] = useState(false)
+    const passwordInputRef = useRef<InputRef>(null)
+
+     // Automatically set the email
+    const queryParams = new URLSearchParams(location.search);
+    const emailInQueryParam = queryParams.get('email')
+
+    useEffect(() => {
+
+        if (emailInQueryParam && passwordInputRef.current) {
+            form.setFieldValue('email', emailInQueryParam)
+            passwordInputRef.current.focus()
+        }
+
+    }, [passwordInputRef])
 
     /**
      * Authenticate function associated with 'onFinish' event in login-form
@@ -85,14 +101,14 @@ export default function LoginPage(): JSX.Element {
                     rules={[{ type: "email", message: "O campo email deve ser um email válido" }, { required: true, message: "O campo email é obrigatório" }]}
                 >
 
-                    <Input />
+                    <Input autoFocus={true} />
                 </Form.Item>
                 <Form.Item<LoginFormType>
                     label="Senha"
                     name="password"
                     rules={[{ required: true, message: "O campo senha é obrigatório" }]}
                 >
-                    <Input.Password />
+                    <Input.Password ref={passwordInputRef} />
                 </Form.Item>
                 <Form.Item label={null}>
                     <Button type="primary" htmlType="submit" loading={loading}>

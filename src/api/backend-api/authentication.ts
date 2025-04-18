@@ -73,7 +73,7 @@ const AuthenticationService = {
             headers: {
                 Authorization: `Bearer ${token}`
             }
-        })).data
+    })).data
     },
 
     /**

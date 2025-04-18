@@ -1,6 +1,7 @@
-import { NotificationInstance } from "antd/es/notification/interface";
-import { UserModel } from "../types/backend-api/user";
 import { MessageInstance } from "antd/es/message/interface";
+import { NotificationInstance } from "antd/es/notification/interface";
+import { OrganizationModel } from "../types/backend-api/organization";
+import { UserModel } from "../types/backend-api/user";
 
 export interface AppContextType {
     /**
@@ -42,6 +43,11 @@ export interface AuthenticatedAppContextType {
      * @returns 
      */
     logout: () => Promise<void>,
+
+    /**
+     * The organizations where the user is a member
+     */
+    organizations: OrganizationModel[],
 }
 
 

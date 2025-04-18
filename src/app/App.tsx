@@ -12,6 +12,8 @@ import LoginPage from './login/LoginPage'
 import CreateOrganizationPage from './organizations/create/CreateOrganizationPage'
 import PasswordRecoveryPage from './password-recovery/PasswordRecoveryPage'
 import { AppContextType, EmailAndPasswordCredentials, UserSession } from './types'
+import OrganizationHomePage from './organizations/o/[profileName]/OrganizationHomePage'
+import OrganizationMembersPage from './organizations/o/[profileName]/members/OrganizationMembersPage'
 
 
 
@@ -68,6 +70,8 @@ function App() {
           {/* Authenticated-only pages */}
           <Route element={<AuthLayout />}>
             <Route path='/' element={<Home />} />
+            <Route path='/o/:profileName' element={<OrganizationHomePage />} />
+            <Route path='/o/:profileName/members' element={<OrganizationMembersPage />} />
             <Route path='/organizations/create' element={<CreateOrganizationPage />} />
           </Route>
 
