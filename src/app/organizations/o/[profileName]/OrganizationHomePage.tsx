@@ -36,14 +36,14 @@ export default function OrganizationHomePage(): React.ReactNode {
 
     // sider menu items
     const siderMenuItems: MenuProps['items'] = [
-        { key: "/projects", label: "Projetos", onClick: () => navigate(`/o/${profileName}/projects`), icon: <ProjectOutlined /> },
-        { key: "/performance-analytics", label: "Performance", onClick: () => navigate(`/o/${profileName}/performance-analytics`), icon: <DashboardOutlined /> },
+        // { key: "/projects", label: "Projetos", onClick: () => navigate(`/o/${profileName}/projects`), icon: <ProjectOutlined /> },
+        // { key: "/performance-analytics", label: "Performance", onClick: () => navigate(`/o/${profileName}/performance-analytics`), icon: <DashboardOutlined /> },
         { key: "/members", label: "Membros da organização", onClick: () => navigate(`/o/${profileName}/members`), icon: <TeamOutlined /> },
-        { key: "/configurations", label: "Configurações", onClick: () => navigate(`/o/${profileName}/configurations`), icon: <SettingOutlined /> },
+        // { key: "/configurations", label: "Configurações", onClick: () => navigate(`/o/${profileName}/configurations`), icon: <SettingOutlined /> },
     ]
 
     return (
-        <>
+        <div>
             {
                 (pageState === 'loading') ?
                     <LoadingOutlined />
@@ -76,6 +76,6 @@ export default function OrganizationHomePage(): React.ReactNode {
                             :
                             <></>
             }
-        </>
+        </div>
     )
 }

@@ -11,6 +11,8 @@ import { Pagination } from "../../../../../types/backend-api/pagination"
 import NavigationBar from "../../../../@components/NavigationBar/NavigationBar"
 import ReadContainer from "../../../../@components/ReadContainer/ReadContainer"
 import { useSelectedOrganizationProvider } from "../hooks"
+import { OrganizationMemberInviteService } from "../../../../../api/backend-api/organization-member-invite"
+import { OrganizationMemberInviteModel } from "../../../../../types/backend-api/organization-member-invite"
 
 type SelectedTab = 'activeMembers' | 'pendingInvites'
 
@@ -20,7 +22,9 @@ export default function OrganizationMembersPage(): React.ReactNode {
     const [selectedOrganization, setSelectedOrganization] = useState<OrganizationModel | undefined>(undefined)
     const [pageState, setPageState] = useState<'loading' | 'error' | 'ready'>('loading')
     const [selectedTab, setSelectedTab] = useState<SelectedTab>('activeMembers')
+    const [invites, setInvites] = useState<OrganizationMemberInviteModel[] | undefined>(undefined)
     const [invitesPagination, setInvitesPagination] = useState<Pagination | undefined>(undefined)
+    const [invitesPage, setInvitesPage] = useState<number>(1)
     const [members, setMembers] = useState<OrganizationMemberModel[] | undefined>(undefined)
     const [membersPagination, setMembersPagination] = useState<Pagination | undefined>(undefined)
     const [membersPage, setMembersPage] = useState<number>(1)
@@ -69,13 +73,23 @@ export default function OrganizationMembersPage(): React.ReactNode {
 
         // fetch the pagination from the backend api
         OrganizationMemberService.paginationByOrganization(selectedOrganization.uuid, membersPage)
-            .then((pagination: Pagination) => {
-                setMembersPagination(pagination)
-            })
-            .catch((error: Error) => {
-                console.error(error)
-                setPageState('error')
-            })
+        .then((pagination: Pagination) => {
+            setMembersPagination(pagination)
+        })
+        .catch((error: Error) => {
+            console.error(error)
+            setPageState('error')
+        })
+
+        // fetch the pagination from the backend api
+        OrganizationMemberInviteService.paginationByOrganization(selectedOrganization.uuid, invitesPage)
+        .then((pagination: Pagination) => {
+            setInvitesPagination(pagination)
+        })
+        .catch((error: Error) => {
+            console.error(error)
+            setPageState('error')
+        })
 
     }, [selectedOrganization])
 
@@ -87,21 +101,37 @@ export default function OrganizationMembersPage(): React.ReactNode {
         }
 
         OrganizationMemberService.findByOrganization(selectedOrganization.uuid, membersPage)
-            .then((members: OrganizationMemberModel[]) => {
-                setMembers(members)
-            })
-            .catch((error: Error) => {
-                console.error(error)
-                setPageState('error')
-            })
+        .then((members: OrganizationMemberModel[]) => {
+            setMembers(members)
+        })
+        .catch((error: Error) => {
+            console.error(error)
+            setPageState('error')
+        })
     }, [membersPagination])
+
+    // fetch the invites of the organization using pagination
+    useEffect(() => {
+        // do not fetch data until the membersPagination is loaded
+        if (invitesPagination === undefined || selectedOrganization === undefined) {
+            return
+        }
+
+        OrganizationMemberInviteService.findByOrganization(selectedOrganization.uuid, membersPage)
+        .then((invites: OrganizationMemberInviteModel[]) => {
+            setInvites(invites)
+        })
+        .catch((error: Error) => {
+            console.error(error)
+            setPageState('error')
+        })
+    }, [invitesPagination])
 
     /**
      * Return a element that will be rendered in the active members tab, showing the number of active members in the organization.
      * @returns 
      */
     function ActiveMembersTabTitleWithCounter(): React.ReactElement {
-        // 
         if (membersPagination === undefined) {
             return <LoadingOutlined />
         }
@@ -112,17 +142,32 @@ export default function OrganizationMembersPage(): React.ReactNode {
         )
     }
 
-    function PendingInvitesCounter(): React.ReactElement {
-        // 
+    function InvitesTabTitleWithCounter(): React.ReactElement {
         if (invitesPagination === undefined) {
             return <LoadingOutlined />
         }
         return (
-            <Badge>
-                {invitesPagination.totalRecords}
+            <Badge count={invitesPagination.totalRecords} offset={[10, 0]} size="small">
+                Convites abertos
             </Badge>
         )
     }
+
+    // invites table column definition
+    const invitesTableColumnsDefinition: ColumnType<OrganizationMemberInviteModel>[] = [
+        {
+            title: 'Email',
+            dataIndex: 'memberEmail',
+            key: 'memberEmail',
+            render: (_, record) => record.memberEmail,
+        },
+        {
+            title: 'Data de criação',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            render: (_, record) => new Date(record.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
+        },
+    ]
 
     // members table column definition
     const membersTableColumnsDefinition: ColumnType<OrganizationMemberModel>[] = [
@@ -150,18 +195,10 @@ export default function OrganizationMembersPage(): React.ReactNode {
         }
     ]
 
-    const membersTableDataSource = useMemo(() => {
-        if (members === undefined) {
-            return []
-        }
-
-        return members
-    }, [members]);
-
     return (
         <>
             <NavigationBar title="Membros da organização" returnUrl={`/o/${profileName}`} breadcrumbs={breadcrumbs} />
-            <ReadContainer>
+            <ReadContainer style={{ minHeight: 'calc(100vh - 210px + 64px)' }}>
                 <Tabs
                     activeKey={selectedTab}
                     onChange={(tab) => setSelectedTab(tab as SelectedTab)}
@@ -186,10 +223,10 @@ export default function OrganizationMembersPage(): React.ReactNode {
                                     ?
                                     <Empty description="Nenhum membro encontrado" />
                                     :
-                                    <Table columns={membersTableColumnsDefinition} dataSource={membersTableDataSource} />
+                                    <Table columns={membersTableColumnsDefinition} dataSource={members} />
                         }
                     </TabPane>
-                    <TabPane tab={(<>Convites abertos <PendingInvitesCounter /></>)} key="pendingInvites" forceRender={true}>
+                    <TabPane tab={<InvitesTabTitleWithCounter />} key="pendingInvites" forceRender={true}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '26px' }}>
                             <Space>
                                 <Button icon={<SendOutlined />} type="primary" ref={sendInviteButtonRef}>
@@ -206,7 +243,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                                     ?
                                     <Empty description="Nenhum convite pendente ativo" />
                                     :
-                                    <Table columns={membersTableColumnsDefinition} dataSource={membersTableDataSource} />
+                                    <Table columns={invitesTableColumnsDefinition} dataSource={invites} />
                         }
                     </TabPane>
                 </Tabs>
