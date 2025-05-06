@@ -1,4 +1,6 @@
-export interface Pagination {
+import { TablePaginationConfig } from "antd";
+
+export interface PaginationMetadata {
     /**
      * * The number of items per page
      */
@@ -11,4 +13,22 @@ export interface Pagination {
      * The current page of the pagination
      */
     currentPage: number,
+}
+
+export function parsePaginationMetadataToAntTablePaginationConfig(
+    p: PaginationMetadata, 
+    currentPage: number, 
+    onPageChangeCallback: (page: number) => void | undefined,
+    otherProps: TablePaginationConfig = {}): TablePaginationConfig {
+
+    return {
+        current: currentPage,
+        pageSize: p.itemsPerPage,
+        total: p.totalRecords,
+        onChange(page) {
+            onPageChangeCallback(page)
+        },
+        ...otherProps,
+    }
+
 }

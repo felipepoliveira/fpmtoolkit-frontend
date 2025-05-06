@@ -1,6 +1,6 @@
 import { message as messageApi, notification as notificationApi } from 'antd'
 import { createContext, useMemo, useState } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { BrowserRouter, Route, Routes, useNavigate } from 'react-router'
 import AuthenticationService from '../api/backend-api/authentication'
 import SessionCredentialsStore from '../store/session-credentials'
 import UserSessionStore from '../store/user-session'
@@ -14,6 +14,7 @@ import PasswordRecoveryPage from './password-recovery/PasswordRecoveryPage'
 import { AppContextType, EmailAndPasswordCredentials, UserSession } from './types'
 import OrganizationHomePage from './organizations/o/[profileName]/OrganizationHomePage'
 import OrganizationMembersPage from './organizations/o/[profileName]/members/OrganizationMembersPage'
+import MyAccountPage from './my-account/MyAccountPage'
 
 
 
@@ -57,6 +58,15 @@ function App() {
         throw e
       }
     },
+    logout: () => {
+      // Store the user session in the local storage
+      UserSessionStore.clear()
+      SessionCredentialsStore.clear()
+
+      window.location.replace('/login')
+
+      return Promise.resolve()
+    },
     message,
     notification,
   }), [message, notification])
@@ -70,6 +80,7 @@ function App() {
           {/* Authenticated-only pages */}
           <Route element={<AuthLayout />}>
             <Route path='/' element={<Home />} />
+            <Route path='/my-account' element={<MyAccountPage />} />
             <Route path='/o/:profileName' element={<OrganizationHomePage />} />
             <Route path='/o/:profileName/members' element={<OrganizationMembersPage />} />
             <Route path='/organizations/create' element={<CreateOrganizationPage />} />

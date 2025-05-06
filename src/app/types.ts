@@ -19,6 +19,12 @@ export interface AppContextType {
     login: (credentials: EmailAndPasswordCredentials) => Promise<UserSession>,
 
     /**
+     * Make the user logout and go back to the unauthenticated login home page
+     * @returns 
+     */
+    logout: () => Promise<void>,
+
+    /**
      * Message instance. Used to show message to the user
      */
     message: MessageInstance,

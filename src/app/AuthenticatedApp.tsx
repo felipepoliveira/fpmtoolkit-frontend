@@ -1,13 +1,14 @@
-import { Layout, MenuProps } from "antd";
+import { Avatar, Dropdown, Layout, MenuProps, Typography } from "antd";
 import { Footer, Header } from "antd/es/layout/layout";
 import { createContext, JSX, useContext, useEffect, useMemo, useState } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router";
+import { Link, Navigate, Outlet, useNavigate } from "react-router";
 import UserOrganizationsService from "../api/backend-api/me/user-organizations";
 import SessionCredentialsStore from "../store/session-credentials";
 import UserSessionStore from "../store/user-session";
 import { OrganizationModel } from "../types/backend-api/organization";
 import { AppContext } from "./App";
 import { AuthenticatedAppContextType, UserSession } from "./types";
+import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 
 
 export const AuthenticatedAppContext = createContext<AuthenticatedAppContextType>({} as AuthenticatedAppContextType)
@@ -41,7 +42,7 @@ export default function AuthLayout(): JSX.Element {
             },
 
             // start empty, but is loaded on a useEffect
-            organizations: (userOrganizations === undefined) ? [] : userOrganizations, 
+            organizations: (userOrganizations === undefined) ? [] : userOrganizations,
         }
         return authenticatedAppContext
     }, [userOrganizations])
@@ -94,13 +95,45 @@ export default function AuthLayout(): JSX.Element {
     const items: MenuProps['items'] = [
         { key: '' }
     ]
-  
+
 
     return (
         <AuthenticatedAppContext.Provider value={authenticatedAppContext}>
             <Layout>
-                <Header style={{ display: 'flex', alignItems: 'center' }}>
-                    <div className="demo-logo" />
+                <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    {/* Elements aligned to the left corner */}
+                    <div>
+                        <Link to={'/'}>
+                            <Typography style={{ color: '#ffffff', fontWeight: 700 }}>FPM Toolkit</Typography>
+                        </Link>
+                    </div>
+                    {/* Elements aligned to the right corner */}
+                    <div>
+                        <Dropdown
+                            menu={{
+                                items: [
+                                    {
+                                        key: 'my-account',
+                                        label: 'Minha conta',
+                                        icon: <UserOutlined />,
+                                        onClick: () => {
+                                            navigate('/my-account')
+                                        }
+                                    },
+                                    {
+                                        key: 'logout',
+                                        label: 'Sair da conta',
+                                        icon: <LogoutOutlined />,
+                                        onClick: () => {
+                                            appContext.logout()
+                                        }
+                                    },
+                                ]
+                            }}
+                        >
+                            <Avatar icon={<UserOutlined />} />
+                        </Dropdown>
+                    </div>
                 </Header>
                 <div style={{ padding: '0 48px', marginTop: 32 }}>
                     <Outlet />

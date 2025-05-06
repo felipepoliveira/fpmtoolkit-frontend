@@ -1,6 +1,6 @@
 import { I18nRegion } from "../../types/backend-api/i18n-region"
 import { OrganizationMemberInviteModel } from "../../types/backend-api/organization-member-invite"
-import { Pagination } from "../../types/backend-api/pagination"
+import { PaginationMetadata } from "../../types/backend-api/pagination"
 import BackendApi from "./backend-api"
 
 interface CreateInviteRequest {
@@ -52,7 +52,7 @@ export const OrganizationMemberInviteService = {
      * @param limit 
      * @returns 
      */
-    paginationByOrganization: async (organizationUuid: string, page: number, limit: number = 20): Promise<Pagination> => {
+    paginationByOrganization: async (organizationUuid: string, page: number, limit: number = 20): Promise<PaginationMetadata> => {
         const queryParameters = `pagination=true&limit=${limit}&page=${page}`
         return (await BackendApi.get(`/api/organizations/${organizationUuid}/invites?${queryParameters}`)).data
     },

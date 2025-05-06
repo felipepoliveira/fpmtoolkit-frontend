@@ -1,22 +1,25 @@
-import { CrownOutlined, DeleteOutlined, DownOutlined, LoadingOutlined, MenuOutlined, SendOutlined, UserAddOutlined } from "@ant-design/icons"
-import { Badge, Button, Drawer, Dropdown, Empty, Form, Input, Menu, Modal, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
+import { CrownOutlined, DeleteOutlined, LoadingOutlined, MenuOutlined, SendOutlined, UserAddOutlined } from "@ant-design/icons"
+import { Badge, Button, Drawer, Dropdown, Empty, Form, Input, Modal, Pagination, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
 import { ItemType } from "antd/es/breadcrumb/Breadcrumb"
-import { ColumnType } from "antd/es/table"
+import { FormProps, useForm } from "antd/es/form/Form"
+import { ColumnType, TablePaginationConfig } from "antd/es/table"
 import TabPane from "antd/es/tabs/TabPane"
 import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import ApiError from "../../../../../api/backend-api/api-error"
 import { OrganizationMemberService } from "../../../../../api/backend-api/organization-member"
+import { OrganizationMemberInviteService } from "../../../../../api/backend-api/organization-member-invite"
+import { I18nRegion } from "../../../../../types/backend-api/i18n-region"
 import { OrganizationModel } from "../../../../../types/backend-api/organization"
 import { OrganizationMemberModel } from "../../../../../types/backend-api/organization-member"
-import { Pagination } from "../../../../../types/backend-api/pagination"
+import { OrganizationMemberInviteModel } from "../../../../../types/backend-api/organization-member-invite"
+import { PaginationMetadata, parsePaginationMetadataToAntTablePaginationConfig } from "../../../../../types/backend-api/pagination"
 import NavigationBar from "../../../../@components/NavigationBar/NavigationBar"
 import ReadContainer from "../../../../@components/ReadContainer/ReadContainer"
-import { useSelectedOrganizationProvider } from "../hooks"
-import { OrganizationMemberInviteService } from "../../../../../api/backend-api/organization-member-invite"
-import { OrganizationMemberInviteModel } from "../../../../../types/backend-api/organization-member-invite"
-import { FormInstance, FormProps, useForm } from "antd/es/form/Form"
-import { I18nRegion } from "../../../../../types/backend-api/i18n-region"
-import ApiError from "../../../../../api/backend-api/api-error"
 import { AppContext } from "../../../../App"
+import { useSelectedOrganizationProvider } from "../hooks"
+
+// Store the amount of items per page on the tables
+const ItemsPerPage = 20
 
 type SelectedTab = 'activeMembers' | 'pendingInvites'
 
@@ -48,7 +51,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
     const [loading, setLoading] = useState(false)
     // control the state of the invites table
     const [invites, setInvites] = useState<OrganizationMemberInviteModel[] | undefined>(undefined)
-    const [invitesPagination, setInvitesPagination] = useState<Pagination | undefined>(undefined)
+    const [invitesPagination, setInvitesPagination] = useState<PaginationMetadata | undefined>(undefined)
     const [invitesPage, setInvitesPage] = useState<number>(1)
     const [showDeleteInviteModal, setShowDeleteInviteModal] = useState<boolean>(false)
     const [showInviteDrawer, setShowInviteDrawer] = useState<boolean>(false)
@@ -56,7 +59,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
     const [selectedInvite, setSelectedInvite] = useState<OrganizationMemberInviteModel | undefined>(undefined)
     // control the state of the members table
     const [members, setMembers] = useState<OrganizationMemberModel[] | undefined>(undefined)
-    const [membersPagination, setMembersPagination] = useState<Pagination | undefined>(undefined)
+    const [membersPagination, setMembersPagination] = useState<PaginationMetadata | undefined>(undefined)
     const [membersPage, setMembersPage] = useState<number>(1)
 
     const sendInviteButtonRef = useRef<HTMLButtonElement>(null)
@@ -82,6 +85,24 @@ export default function OrganizationMembersPage(): React.ReactNode {
 
     }, [selectedOrganization])
 
+    // Create the invites table pagination config into a React memo
+    const invitesTablePaginationConfig : TablePaginationConfig | undefined = useMemo(() => {
+        if (invitesPagination === undefined) {
+            return undefined
+        }
+
+        return parsePaginationMetadataToAntTablePaginationConfig(invitesPagination, invitesPage, (page) => setInvitesPage(page))
+    }, [invitesPagination, invitesPage])
+
+    // Create the members table pagination config into a React memo
+    const membersTablePaginationConfig : TablePaginationConfig | undefined = useMemo(() => {
+        if (membersPagination === undefined) {
+            return undefined
+        }
+
+        return parsePaginationMetadataToAntTablePaginationConfig(membersPagination, membersPage, (page) => setMembersPage(page))
+    }, [membersPagination, membersPage])
+
     // fetch the selected organization using provider hook
     useEffect(() => {
         selectedOrganizationProvider()
@@ -104,8 +125,8 @@ export default function OrganizationMembersPage(): React.ReactNode {
         }
 
         // fetch the pagination from the backend api
-        OrganizationMemberService.paginationByOrganization(selectedOrganization.uuid, membersPage)
-            .then((pagination: Pagination) => {
+        OrganizationMemberService.paginationByOrganization(selectedOrganization.uuid, membersPage, ItemsPerPage)
+            .then((pagination: PaginationMetadata) => {
                 setMembersPagination(pagination)
             })
             .catch((error: Error) => {
@@ -114,8 +135,8 @@ export default function OrganizationMembersPage(): React.ReactNode {
             })
 
         // fetch the pagination from the backend api
-        OrganizationMemberInviteService.paginationByOrganization(selectedOrganization.uuid, invitesPage)
-            .then((pagination: Pagination) => {
+        OrganizationMemberInviteService.paginationByOrganization(selectedOrganization.uuid, invitesPage, ItemsPerPage)
+            .then((pagination: PaginationMetadata) => {
                 setInvitesPagination(pagination)
             })
             .catch((error: Error) => {
@@ -132,7 +153,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
             return
         }
 
-        OrganizationMemberService.findByOrganization(selectedOrganization.uuid, membersPage)
+        OrganizationMemberService.findByOrganization(selectedOrganization.uuid, membersPage, membersPagination.itemsPerPage)
             .then((members: OrganizationMemberModel[]) => {
                 setMembers(members)
             })
@@ -140,7 +161,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                 console.error(error)
                 setPageState('error')
             })
-    }, [membersPagination])
+    }, [membersPagination, membersPage])
 
     // fetch the invites of the organization using pagination
     useEffect(() => {
@@ -149,7 +170,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
             return
         }
 
-        OrganizationMemberInviteService.findByOrganization(selectedOrganization.uuid, membersPage)
+        OrganizationMemberInviteService.findByOrganization(selectedOrganization.uuid, invitesPage, invitesPagination.itemsPerPage)
             .then((invites: OrganizationMemberInviteModel[]) => {
                 setInvites(invites)
             })
@@ -157,7 +178,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                 console.error(error)
                 setPageState('error')
             })
-    }, [invitesPagination])
+    }, [invitesPagination, invitesPage])
 
     /**
      * Return a element that will be rendered in the active members tab, showing the number of active members in the organization.
@@ -227,9 +248,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                             ]
                         }}
                     >
-                        <Button icon={<MenuOutlined />}>
-
-                        </Button>
+                        <Button icon={<MenuOutlined />} />
                     </Dropdown>
                 )
             }
@@ -247,6 +266,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
         {
             title: 'Email',
             dataIndex: 'user.primaryEmail',
+            key: 'user.primaryEmail',
             render: (_, record) => record.user.primaryEmail,
         },
         {
@@ -412,7 +432,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                                     ?
                                     <Empty description="Nenhum membro encontrado" />
                                     :
-                                    <Table columns={membersTableColumnsDefinition} dataSource={members} />
+                                    <Table columns={membersTableColumnsDefinition} dataSource={members} pagination={membersTablePaginationConfig}/>
                         }
                     </TabPane>
                     <TabPane tab={<InvitesTabTitleWithCounter />} key="pendingInvites" forceRender={true}>
@@ -432,7 +452,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                                     ?
                                     <Empty description="Nenhum convite pendente ativo" />
                                     :
-                                    <Table columns={invitesTableColumnsDefinition} dataSource={invites} />
+                                    <Table columns={invitesTableColumnsDefinition} dataSource={invites} pagination={{...invitesTablePaginationConfig}} />
                         }
                     </TabPane>
                 </Tabs>
@@ -527,6 +547,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                     open={showDeleteInviteModal}
                     onOk={() => deleteInvite(selectedInvite)}
                     onCancel={() => setShowDeleteInviteModal(false)}
+                    key='deleteInviteModal'
                 >
                     <Typography>Deseja deletar o convite para <b>{selectedInvite.memberEmail}</b>?</Typography>
                     <Typography>Ao excluir o convite o destinatário não poderá mais ingressar na sua organização através dele.</Typography>
