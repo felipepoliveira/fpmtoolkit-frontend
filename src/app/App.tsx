@@ -15,6 +15,7 @@ import { AppContextType, EmailAndPasswordCredentials, UserSession } from './type
 import OrganizationHomePage from './organizations/o/[profileName]/OrganizationHomePage'
 import OrganizationMembersPage from './organizations/o/[profileName]/members/OrganizationMembersPage'
 import MyAccountPage from './my-account/MyAccountPage'
+import JoinOrganizationPage from './join-organization/JoinOrganizationPage'
 
 
 
@@ -88,6 +89,7 @@ function App() {
 
           {/* Unauthenticated pages */}
           <Route path='/create-account' element={<CreateAccountPage />} />
+          <Route path='/join-organization' element={<JoinOrganizationPage />} />
           <Route path='/login' element={<LoginPage />} />
           <Route path='/password-recovery' element={<PasswordRecoveryPage />} />
         </Routes>

@@ -5,6 +5,8 @@ import ApiError from "../../api/backend-api/api-error";
 import ReadContainer from "../@components/ReadContainer/ReadContainer";
 import { AppContext } from "../App";
 import { useLocation } from "react-router";
+import { PersistentQueryParams, usePersistentQuery } from "../hooks";
+import { assertSafeRedirectUrl } from "../../commons/string";
 
 
 interface LoginFormType {
@@ -24,6 +26,8 @@ export default function LoginPage(): JSX.Element {
      // Automatically set the email
     const queryParams = new URLSearchParams(location.search);
     const emailInQueryParam = queryParams.get('email')
+
+    const persistentQueryParameters = usePersistentQuery(PersistentQueryParams.authenticationFlow)
 
     useEffect(() => {
 
@@ -53,7 +57,7 @@ export default function LoginPage(): JSX.Element {
                 duration: 5
             })
             setTimeout(() => {
-                navigate("/")
+                navigate(assertSafeRedirectUrl(persistentQueryParameters.get('redirectTo'), "/"))
             }, actionTimeout)
         })
         .catch(e => {
@@ -118,8 +122,8 @@ export default function LoginPage(): JSX.Element {
                 <Form.Item label={null}>
                     <Flex vertical>
                         <Flex gap='large' wrap>
-                            <Link to="/create-account">Criar conta</Link>
-                            <Link to="/password-recovery">Esqueceu sua senha?</Link>
+                            <Link to={`/create-account?${persistentQueryParameters}`}>Criar conta</Link>
+                            <Link to={`/password-recovery?${persistentQueryParameters}`}>Esqueceu sua senha?</Link>
                         </Flex>
                     </Flex>
                 </Form.Item>

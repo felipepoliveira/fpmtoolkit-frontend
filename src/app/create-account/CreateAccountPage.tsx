@@ -9,6 +9,8 @@ import { Link, useNavigate } from "react-router";
 import AvailableEmailInput, { EmailAvailabilityState } from "../@components/AvailableEmailInput/AvailableEmailInput";
 import PasswordInputWithStrengthChecker, { PasswordRank } from "../@components/PasswordInputWithStrengthChecker/PasswordInputWithStrengthChecker";
 import NavigationBar from "../@components/NavigationBar/NavigationBar";
+import { PersistentQueryParams, usePersistentQuery } from "../hooks";
+import { assertSafeRedirectUrl } from "../../commons/string";
 
 interface CreateAccountFormType {
     presentationName: string,
@@ -21,6 +23,7 @@ export default function CreateAccountPage(): JSX.Element {
     window.document.title = "FPM Toolkit - Criar Conta"
 
     const appContext = useContext(AppContext)
+    const persistentQueryParameters = usePersistentQuery(PersistentQueryParams.authenticationFlow)
     const navigate = useNavigate()
     const [form] = Form.useForm();
     const [emailAvailability, setEmailAvailability] = useState<EmailAvailabilityState>("unknown")
@@ -105,7 +108,7 @@ export default function CreateAccountPage(): JSX.Element {
                             duration: 5,
                         })
                         setTimeout(() => {
-                            navigate("/")
+                            navigate(assertSafeRedirectUrl(persistentQueryParameters.get('redirectTo'), "/"))
                         }, actionTimeout)
                     })
                     .catch(e => {
@@ -203,7 +206,7 @@ export default function CreateAccountPage(): JSX.Element {
                     </Form.Item>
                     <Form.Item label={null}>
                         <Flex justify="space-between">
-                            <Link to="/login">Já tem uma conta?</Link>
+                            <Link to={`/login?${persistentQueryParameters}`}>Já tem uma conta?</Link>
                         </Flex>
                     </Form.Item>
                 </Form>
