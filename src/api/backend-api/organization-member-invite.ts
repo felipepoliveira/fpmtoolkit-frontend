@@ -34,6 +34,14 @@ export const OrganizationMemberInviteService = {
         return (await BackendApi.post(`/api/organizations/${organizationUuid}/invites`, dto)).data
     },
     /**
+     * Return organization member invite data from the back-end API using the invite token as credentials
+     * @param inviteToken 
+     * @returns 
+     */
+    findByInviteToken: async (inviteToken: string): Promise<OrganizationMemberInviteModel> => {
+        return (await BackendApi.get(`/api/organization-member-invites/public/by-token/${inviteToken}`)).data
+    },
+    /**
      * Fetch pagination metadata of all organization member invites of the given organization
      * @param organizationUuid 
      * @param page 

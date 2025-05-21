@@ -1,18 +1,19 @@
 import { AxiosError } from "axios";
 
 export type ErrorType =
-  | "EMAIL_NOT_CONFIRMED"
-  | "FORBIDDEN"
-  | "INVALID_CREDENTIALS"
-  | "INVALID_EMAIL"
-  | "INVALID_PARAMETERS"
-  | "INVALID_PASSWORD"
-  | "NOT_FOUND"
-  | "PAYMENT_REQUIRED"
-  | "TOO_MANY_REQUESTS"
-  | "VALIDATION"
-  |
-  "UNKNOWN";
+    | "DUPLICATED"
+    | "EMAIL_NOT_CONFIRMED"
+    | "FORBIDDEN"
+    | "INVALID_CREDENTIALS"
+    | "INVALID_EMAIL"
+    | "INVALID_PARAMETERS"
+    | "INVALID_PASSWORD"
+    | "NOT_FOUND"
+    | "PAYMENT_REQUIRED"
+    | "TOO_MANY_REQUESTS"
+    | "VALIDATION"
+    |
+    "UNKNOWN";
 
 
 export default class ApiError {
