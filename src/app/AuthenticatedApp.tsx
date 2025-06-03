@@ -7,8 +7,9 @@ import SessionCredentialsStore from "../store/session-credentials";
 import UserSessionStore from "../store/user-session";
 import { OrganizationModel } from "../types/backend-api/organization";
 import { AppContext } from "./App";
-import { AuthenticatedAppContextType, UserSession } from "./types";
+import { AuthenticatedAppContextType, UserStoredSession } from "./types";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import { UserSessionRole } from "../types/backend-api/user";
 
 
 export const AuthenticatedAppContext = createContext<AuthenticatedAppContextType>({} as AuthenticatedAppContextType)
@@ -25,13 +26,17 @@ export default function AuthLayout(): JSX.Element {
     // The authenticated app context instance
     const authenticatedAppContext = useMemo(() => {
         const authenticatedAppContext: AuthenticatedAppContextType = {
-            authenticatedUser: (): UserSession => {
+            authenticatedUser: (): UserStoredSession => {
                 const userSession = UserSessionStore.get()
                 if (!userSession) {
                     throw new Error("No user session is stored in the app context")
                 }
 
                 return userSession
+            },
+            checkRole(roles: UserSessionRole[]): boolean {
+                const userRoles = this.authenticatedUser().session.roles;
+                return roles.some(role => userRoles.includes(role));
             },
             logout: (): Promise<void> => {
                 UserSessionStore.clear()
@@ -135,12 +140,9 @@ export default function AuthLayout(): JSX.Element {
                         </Dropdown>
                     </div>
                 </Header>
-                <div style={{ padding: '0 48px', marginTop: 32 }}>
+                <div style={{ padding: '0 48px', marginTop: 32, minHeight: 'calc(100vh - 124px)' }}>
                     <Outlet />
                 </div>
-                <Footer style={{ textAlign: 'center' }}>
-                    FPM Toolkit
-                </Footer>
             </Layout>
         </AuthenticatedAppContext.Provider>
     )

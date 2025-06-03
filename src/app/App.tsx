@@ -11,7 +11,7 @@ import Home from './Home'
 import LoginPage from './login/LoginPage'
 import CreateOrganizationPage from './organizations/create/CreateOrganizationPage'
 import PasswordRecoveryPage from './password-recovery/PasswordRecoveryPage'
-import { AppContextType, EmailAndPasswordCredentials, UserSession } from './types'
+import { AppContextType, EmailAndPasswordCredentials, UserStoredSession } from './types'
 import OrganizationHomePage from './organizations/o/[profileName]/OrganizationHomePage'
 import OrganizationMembersPage from './organizations/o/[profileName]/members/OrganizationMembersPage'
 import MyAccountPage from './my-account/MyAccountPage'
@@ -25,7 +25,7 @@ function App() {
   
   const [message, messageContextHolder] = messageApi.useMessage()
   const [notification, notificationContextHolder] = notificationApi.useNotification()
-  const [userSession, setUserSession] = useState<UserSession | undefined>(UserSessionStore.get())
+  const [userSession, setUserSession] = useState<UserStoredSession | undefined>(UserSessionStore.get())
 
   const appContext = useMemo<AppContextType>(() => ({
 
@@ -33,7 +33,7 @@ function App() {
       return (UserSessionStore.get() !== undefined && SessionCredentialsStore.get() !== undefined)
     },
 
-    login: async (credentials: EmailAndPasswordCredentials): Promise<UserSession> => {
+    login: async (credentials: EmailAndPasswordCredentials): Promise<UserStoredSession> => {
       try {
         // Call the authentication service to generate a token
         const authenticationResponse = await AuthenticationService.generateAuthenticationTokenWithEmailAndPassword(
@@ -42,9 +42,10 @@ function App() {
 
         // Fetch user data with the generated token
         const userData = await AuthenticationService.fetchUserDataWithBearerToken(authenticationResponse.token)
+        const userSessionFromApi = await AuthenticationService.fetchSessionDataWithBearerToken(authenticationResponse.token)
         const userSession = {
           userData: userData,
-          sessionExpiresAt: authenticationResponse.payload.expiresAt
+          session: userSessionFromApi
         }
 
         // Store the user session in the local storage

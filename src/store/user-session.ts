@@ -1,4 +1,4 @@
-import { UserSession } from "../app/types"
+import { UserStoredSession } from "../app/types"
 
 const userSessionStoreKey = 'userSession'
 
@@ -6,7 +6,7 @@ const UserSessionStore = {
     clear: () => {
         localStorage.removeItem(userSessionStoreKey)
     },
-    get: (): UserSession | undefined => {
+    get: (): UserStoredSession | undefined => {
         const userSession = localStorage.getItem(userSessionStoreKey)
         if (userSession) {
             return JSON.parse(userSession)
@@ -14,7 +14,7 @@ const UserSessionStore = {
         return undefined
     },
 
-    store: (userSession: UserSession) => {
+    store: (userSession: UserStoredSession) => {
         localStorage.setItem(userSessionStoreKey, JSON.stringify(userSession))
     },
 }

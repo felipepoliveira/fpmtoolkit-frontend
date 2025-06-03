@@ -1,4 +1,4 @@
-import { UserModel } from "../../types/backend-api/user";
+import { UserModel, UserSession } from "../../types/backend-api/user";
 import BackendApi from "./backend-api";
 
 /// Types
@@ -68,6 +68,18 @@ interface IsEmailAvailableToUseResponse {
 
 /// Services
 const AuthenticationService = {
+    /**
+     * Return session data of the provided token
+     * @param token 
+     * @returns 
+     */
+    fetchSessionDataWithBearerToken: async(token: string): Promise<UserSession> => {
+        return (await BackendApi.get("/api/auth/session", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })).data
+    },
     fetchUserDataWithBearerToken: async (token: string): Promise<UserModel> => {
         return (await BackendApi.get("/api/auth/me", {
             headers: {

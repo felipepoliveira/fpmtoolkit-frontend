@@ -1,7 +1,7 @@
 import { MessageInstance } from "antd/es/message/interface";
 import { NotificationInstance } from "antd/es/notification/interface";
 import { OrganizationModel } from "../types/backend-api/organization";
-import { UserModel } from "../types/backend-api/user";
+import { UserModel, UserSessionRole, UserSession } from "../types/backend-api/user";
 
 export interface AppContextType {
     /**
@@ -16,7 +16,7 @@ export interface AppContextType {
      * @param credentials 
      * @returns 
      */
-    login: (credentials: EmailAndPasswordCredentials) => Promise<UserSession>,
+    login: (credentials: EmailAndPasswordCredentials) => Promise<UserStoredSession>,
 
     /**
      * Make the user logout and go back to the unauthenticated login home page
@@ -40,7 +40,14 @@ export interface AuthenticatedAppContextType {
     /**
      * @returns Return data about the authenticated user session
      */
-    authenticatedUser: () => UserSession,
+    authenticatedUser: () => UserStoredSession,
+
+    /**
+     * Return a flag indicating if the authenticated user has one of the given roles
+     * @param roles 
+     * @returns 
+     */
+    checkRole: (roles: UserSessionRole[]) => Boolean,
     
     /**
      * Make the authenticated user logout. This function only will remove the data about
@@ -72,7 +79,7 @@ export interface EmailAndPasswordCredentials {
     password: string
 }
 
-export interface UserSession {
+export interface UserStoredSession {
     userData: UserModel,
-    sessionExpiresAt: string,
+    session: UserSession,
 }
