@@ -47,7 +47,7 @@ export interface AuthenticatedAppContextType {
      * @param roles 
      * @returns 
      */
-    checkRole: (roles: UserSessionRole[]) => Boolean,
+    hasRole: (roles: UserSessionRole[]) => boolean,
     
     /**
      * Make the authenticated user logout. This function only will remove the data about

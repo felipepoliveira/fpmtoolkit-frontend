@@ -66,6 +66,15 @@ interface IsEmailAvailableToUseResponse {
     isAvailable: boolean,
 }
 
+interface RefreshTokenRequest {
+    /**
+     * The organization ID used to refresh the token. This parameter should
+     * be used when the roles of the session should be applied based on a
+     * organization
+     */
+    organizationId?: string
+}
+
 /// Services
 const AuthenticationService = {
     /**
@@ -104,6 +113,15 @@ const AuthenticationService = {
      */
     isEmailAvailableToUse: async (email: string): Promise<IsEmailAvailableToUseResponse> => {
         return (await BackendApi.get(`/api/auth/public/access-emails/${email}/is-available`)).data
+    },
+
+    /**
+     * Generate a refresh token that always update the data of the user session. This function is helpful
+     * when its needed to refresh the user token roles, for example
+     * @returns 
+     */
+    refreshToken: async(payload: RefreshTokenRequest): Promise<GenerateAuthenticationTokenWithEmailAndPasswordResponse> => {
+        return (await BackendApi.post(`/api/auth/tokens/refresh`, payload)).data
     }
 }
 

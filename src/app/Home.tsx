@@ -1,10 +1,11 @@
-import { Layout, Menu, MenuProps, theme } from "antd";
+import { Avatar, Layout, Menu, MenuProps, theme } from "antd";
 import { Content } from "antd/es/layout/layout";
 import Sider from "antd/es/layout/Sider";
 import { JSX, useContext } from "react";
 import { Link, useNavigate } from "react-router";
 import { OrganizationModel } from "../types/backend-api/organization";
 import { AuthenticatedAppContext } from "./AuthenticatedApp";
+import { getInitials } from "../commons/string";
 
 export default function Home(): JSX.Element {
     const authenticatedAppContext = useContext(AuthenticatedAppContext)
@@ -19,6 +20,7 @@ export default function Home(): JSX.Element {
             key: o.uuid,
             label: o.presentationName,
             onClick: () => selectOrganization(o),
+            icon: <Avatar>{getInitials(o.presentationName)}</Avatar>
         }
     })
 

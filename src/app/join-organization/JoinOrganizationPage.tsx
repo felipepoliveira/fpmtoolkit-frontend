@@ -121,7 +121,6 @@ export default function JoinOrganizationPage(): React.ReactElement {
     }, [inviteTokenStatus, authenticatedAccountStatus])
 
     function AuthenticatedUserContainer(): React.ReactElement {
-        console.log(authenticatedAccountStatus)
         if (!inviteToken || authenticatedAccountStatus === 'checking') {
             return (
                 <>

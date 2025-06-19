@@ -1,22 +1,27 @@
-import { CrownOutlined, DeleteOutlined, LoadingOutlined, MenuOutlined, SendOutlined, UserAddOutlined } from "@ant-design/icons"
-import { Badge, Button, Drawer, Dropdown, Empty, Form, Input, Modal, Pagination, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
+import { CrownOutlined, DeleteOutlined, EditOutlined, LoadingOutlined, MenuOutlined, SaveOutlined, SendOutlined, UserAddOutlined } from "@ant-design/icons"
+import { Badge, Button, Checkbox, CheckboxChangeEvent, Divider, Drawer, Dropdown, Empty, Form, Input, Modal, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
 import { ItemType } from "antd/es/breadcrumb/Breadcrumb"
 import { FormProps, useForm } from "antd/es/form/Form"
 import { ColumnType, TablePaginationConfig } from "antd/es/table"
 import TabPane from "antd/es/tabs/TabPane"
 import { useContext, useEffect, useMemo, useRef, useState } from "react"
-import ApiError from "../../../../../api/backend-api/api-error"
-import { OrganizationMemberService } from "../../../../../api/backend-api/organization-member"
-import { OrganizationMemberInviteService } from "../../../../../api/backend-api/organization-member-invite"
-import { I18nRegion } from "../../../../../types/backend-api/i18n-region"
-import { OrganizationModel } from "../../../../../types/backend-api/organization"
-import { OrganizationMemberModel } from "../../../../../types/backend-api/organization-member"
-import { OrganizationMemberInviteModel } from "../../../../../types/backend-api/organization-member-invite"
-import { PaginationMetadata, parsePaginationMetadataToAntTablePaginationConfig } from "../../../../../types/backend-api/pagination"
-import NavigationBar from "../../../../@components/NavigationBar/NavigationBar"
-import ReadContainer from "../../../../@components/ReadContainer/ReadContainer"
-import { AppContext } from "../../../../App"
+import ApiError from "../../../../api/backend-api/api-error"
+import { OrganizationMemberService } from "../../../../api/backend-api/organization-member"
+import { OrganizationMemberInviteService } from "../../../../api/backend-api/organization-member-invite"
+import { I18nRegion } from "../../../../types/backend-api/i18n-region"
+import { OrganizationModel } from "../../../../types/backend-api/organization"
+import { getLabeledOrganizationMemberRole, getLabeledOrganizationMemberRoles, OrganizationMemberModel, OrganizationMemberRole } from "../../../../types/backend-api/organization-member"
+import { OrganizationMemberInviteModel } from "../../../../types/backend-api/organization-member-invite"
+import { PaginationMetadata, parsePaginationMetadataToAntTablePaginationConfig } from "../../../../types/backend-api/pagination"
+import NavigationBar from "../../../@components/NavigationBar/NavigationBar"
+import ReadContainer from "../../../@components/ReadContainer/ReadContainer"
+import { AppContext } from "../../../App"
 import { useSelectedOrganizationProvider } from "../hooks"
+import { AuthenticatedAppContext } from "../../../AuthenticatedApp"
+import { useRoleFeedbackText } from "../../../hooks"
+import RoleCheckbox from "../../../@components/RoleCheckbox/RoleCheckbox"
+import Title from "antd/es/typography/Title"
+import { mapConditionally as conditionalMap } from "../../../../commons/array"
 
 // Store the amount of items per page on the tables
 const ItemsPerPage = 20
@@ -43,6 +48,7 @@ interface ResendInviteFormType {
 
 export default function OrganizationMembersPage(): React.ReactNode {
     const appContext = useContext(AppContext)
+    const authAppContext = useContext(AuthenticatedAppContext)
     const { selectedOrganizationProvider, profileName } = useSelectedOrganizationProvider()
 
     const [selectedOrganization, setSelectedOrganization] = useState<OrganizationModel | undefined>(undefined)
@@ -61,6 +67,8 @@ export default function OrganizationMembersPage(): React.ReactNode {
     const [members, setMembers] = useState<OrganizationMemberModel[] | undefined>(undefined)
     const [membersPagination, setMembersPagination] = useState<PaginationMetadata | undefined>(undefined)
     const [membersPage, setMembersPage] = useState<number>(1)
+    const [selectedMember, setSelectedMember] = useState<OrganizationMemberModel | undefined>(undefined)
+    const [showManageMemberDrawer, setShowManageMemberDrawer] = useState<boolean>(false)
 
     const sendInviteButtonRef = useRef<HTMLButtonElement>(null)
     const [sendInviteForm] = useForm<SendInviteFormType>()
@@ -85,8 +93,19 @@ export default function OrganizationMembersPage(): React.ReactNode {
 
     }, [selectedOrganization])
 
+    const addMemberRoleFeedback = useRoleFeedbackText({
+        roleCheckResult: authAppContext.hasRole(["ROLE_ORG_ADMINISTRATOR"]),
+        authorizedText: "Envia um novo convite para adicionar um membro na organização",
+        forbiddenText: "Você não tem permissão para adicionar novos membros na organização"
+    })
+
+    const manageMemberRoleFeedback = useRoleFeedbackText({
+        roleCheckResult: authAppContext.hasRole(["ROLE_ORG_MEMBER_ADMINISTRATOR"]),
+        forbiddenText: "Você não tem permissão para gerenciar membros na organização"
+    })
+
     // Create the invites table pagination config into a React memo
-    const invitesTablePaginationConfig : TablePaginationConfig | undefined = useMemo(() => {
+    const invitesTablePaginationConfig: TablePaginationConfig | undefined = useMemo(() => {
         if (invitesPagination === undefined) {
             return undefined
         }
@@ -95,7 +114,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
     }, [invitesPagination, invitesPage])
 
     // Create the members table pagination config into a React memo
-    const membersTablePaginationConfig : TablePaginationConfig | undefined = useMemo(() => {
+    const membersTablePaginationConfig: TablePaginationConfig | undefined = useMemo(() => {
         if (membersPagination === undefined) {
             return undefined
         }
@@ -148,6 +167,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
 
     // fetch the members of the organization using pagination
     useEffect(() => {
+        console.log("Why are you not being called?")
         // do not fetch data until the membersPagination is loaded
         if (membersPagination === undefined || selectedOrganization === undefined) {
             return
@@ -279,6 +299,35 @@ export default function OrganizationMembersPage(): React.ReactNode {
                     </Tooltip>
                 )
             }
+        },
+        {
+            key: 'memberActions',
+            render: (_, member: OrganizationMemberModel) => {
+                return (
+                    <Tooltip title={manageMemberRoleFeedback.text}>
+                        <Dropdown
+                            disabled={!manageMemberRoleFeedback.hasRole}
+                            menu={{
+                                items: [
+                                    {
+
+                                        disabled: (member.isOrganizationOwner), // can't mess up with this guy
+                                        key: 'manage-member',
+                                        label: 'Gerenciar membro',
+                                        icon: <EditOutlined />,
+                                        onClick: () => {
+                                            setSelectedMember(member)
+                                            setShowManageMemberDrawer(true)
+                                        }
+                                    },
+                                ]
+                            }}
+                        >
+                            <Button icon={<MenuOutlined />} />
+                        </Dropdown>
+                    </Tooltip>
+                )
+            }
         }
     ]
 
@@ -401,6 +450,123 @@ export default function OrganizationMembersPage(): React.ReactNode {
             })
     }
 
+    function ManageOrganizationMemberDrawer(): React.ReactNode {
+
+        // States
+        const [selectedRoles, setSelectedRoles] = useState<OrganizationMemberRole[]>((selectedMember) ? selectedMember.roles : [])
+        const [loading, setLoading] = useState(false)
+
+        // Get the labeled organization administrator role so it can be managed in a different way
+        const labeledAdministratorRole = getLabeledOrganizationMemberRole("ORG_ADMINISTRATOR") || {
+            description: "Manage the entire organization",
+            label: 'Administrator',
+            value: 'ORG_ADMINISTRATOR'
+        }
+
+        // Get all others roles besides the ADMINISTRATOR one
+        const labeledOrganizationMemberRoles = getLabeledOrganizationMemberRoles().filter(r => r.value !== 'ORG_ADMINISTRATOR')
+
+
+        function onRoleSelectionChange(event: CheckboxChangeEvent) {
+            const changedRole = event.target.value as OrganizationMemberRole
+
+            const shouldAddRole = selectedRoles.indexOf(changedRole) < 0
+
+            // special things happen when selecting ADMINISTRATOR role...
+            if (changedRole === 'ORG_ADMINISTRATOR') {
+
+                // if ADMINISTRATOR was included, add all other ones
+                if (shouldAddRole) {
+                    setSelectedRoles(["ORG_ADMINISTRATOR", ...labeledOrganizationMemberRoles.map(l => l.value)])
+                }
+                // if ADMINISTRATOR was unchecked, uncheck all other ones
+                else {
+                    setSelectedRoles([])
+                }
+            }
+            // if the changed role is not ADMINISTRATOR but it is checked, ignore all changes
+            else if (selectedRoles.indexOf('ORG_ADMINISTRATOR') >= 0) {
+                return
+            }
+            // otherwise, works like expected... add it if not exists and remove it otherwise
+            else {
+                // if it is not the ADMINISTRATOR role and ADMINISTRATOR is not checked, works like expected...
+                if (shouldAddRole) {
+                    setSelectedRoles([...selectedRoles, changedRole])
+                }
+                else {
+                    setSelectedRoles(selectedRoles.filter(sr => sr !== changedRole))
+                }
+            }
+
+        }
+
+        function updateOrganizationMember() {
+            if (!selectedOrganization || !selectedMember || !members) {
+                return
+            }
+            setLoading(true)
+            OrganizationMemberService.update(selectedOrganization.uuid, selectedMember.uuid, {
+                roles: selectedRoles
+            })
+            .then((updatedMember) => {
+                appContext.message.success({
+                    content: 'Alterações realizadas com sucesso',
+                    duration: 2
+                })
+
+                setMembers(conditionalMap(members, (m) => m.uuid === updatedMember.uuid, updatedMember))
+                setSelectedMember(updatedMember)
+            })
+            .catch(e => {
+                console.error(e)
+                appContext.message.error({
+                    content: 'Um erro inesperado ocorreu ao realizar alterações',
+                    duration: 3
+                })
+            })
+            .finally(() => {
+                setLoading(false)
+            })
+        }
+
+
+        return (
+            (selectedMember) &&
+            <Drawer
+                onClose={() => setShowManageMemberDrawer(false)}
+                open={showManageMemberDrawer}
+                title={`Gerenciar ${selectedMember.user.presentationName}`}
+                width='520px'
+            >
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+                    <Button icon={<SaveOutlined />} type="primary"
+                        loading={loading}
+                        onClick={updateOrganizationMember}>
+                        Salvar alterações
+                    </Button>
+                </div>
+                <Divider />
+                <Title level={5}>Permissões de membro na organização</Title>
+                {/* The administrator role checkbox should be managed individually for better UX */}
+                <RoleCheckbox checked={selectedRoles.indexOf(labeledAdministratorRole.value) >= 0} source={labeledAdministratorRole} style={{ marginTop: '12px' }} onChange={onRoleSelectionChange}/>
+                <br />
+                {/* Render all other roles */}
+                {
+                    labeledOrganizationMemberRoles.map(r => (
+                        <>
+                            <RoleCheckbox source={r} style={{ marginTop: '12px' }}
+                                checked={selectedRoles.indexOf(r.value) >= 0}
+                                onChange={onRoleSelectionChange}
+                            />
+                            <br />
+                        </>
+                    ))
+                }
+            </Drawer>
+        )
+    }
+
     return (
         <>
             <NavigationBar title="Membros da organização" returnUrl={`/o/${profileName}`} breadcrumbs={breadcrumbs} />
@@ -412,15 +578,19 @@ export default function OrganizationMembersPage(): React.ReactNode {
                     <TabPane tab={<ActiveMembersTabTitleWithCounter />} key="activeMembers" forceRender={true}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '26px' }}>
                             <Space>
-                                <Button icon={<UserAddOutlined />} type="primary" onClick={() => {
-                                    setSelectedTab('pendingInvites')
-                                    sendInviteButtonRef.current?.focus()
-                                    setTimeout(() => {
-                                        setShowInviteDrawer(true)
-                                    }, 600);
-                                }}>
-                                    Adicionar membro
-                                </Button>
+                                <Tooltip title={addMemberRoleFeedback.text}>
+                                    <Button icon={<UserAddOutlined />} type="primary"
+                                        disabled={!addMemberRoleFeedback.hasRole}
+                                        onClick={() => {
+                                            setSelectedTab('pendingInvites')
+                                            sendInviteButtonRef.current?.focus()
+                                            setTimeout(() => {
+                                                setShowInviteDrawer(true)
+                                            }, 600);
+                                        }}>
+                                        Adicionar membro
+                                    </Button>
+                                </Tooltip>
                             </Space>
                         </div>
                         {
@@ -432,15 +602,22 @@ export default function OrganizationMembersPage(): React.ReactNode {
                                     ?
                                     <Empty description="Nenhum membro encontrado" />
                                     :
-                                    <Table columns={membersTableColumnsDefinition} dataSource={members} pagination={membersTablePaginationConfig}/>
+                                    <Table columns={membersTableColumnsDefinition} dataSource={members} pagination={membersTablePaginationConfig} />
                         }
                     </TabPane>
                     <TabPane tab={<InvitesTabTitleWithCounter />} key="pendingInvites" forceRender={true}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '26px' }}>
                             <Space>
-                                <Button icon={<SendOutlined />} type="primary" ref={sendInviteButtonRef} onClick={() => setShowInviteDrawer(true)}>
-                                    Enviar convite
-                                </Button>
+                                <Tooltip title={addMemberRoleFeedback.text}>
+                                    <Button
+                                        icon={<SendOutlined />}
+                                        type="primary" ref={sendInviteButtonRef}
+                                        onClick={() => setShowInviteDrawer(true)}
+                                        disabled={!addMemberRoleFeedback.hasRole}
+                                    >
+                                        Enviar convite
+                                    </Button>
+                                </Tooltip>
                             </Space>
                         </div>
                         {
@@ -452,7 +629,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                                     ?
                                     <Empty description="Nenhum convite pendente ativo" />
                                     :
-                                    <Table columns={invitesTableColumnsDefinition} dataSource={invites} pagination={{...invitesTablePaginationConfig}} />
+                                    <Table columns={invitesTableColumnsDefinition} dataSource={invites} pagination={{ ...invitesTablePaginationConfig }} />
                         }
                     </TabPane>
                 </Tabs>
@@ -539,6 +716,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                     </Form>
                 </Drawer>
             }
+            <ManageOrganizationMemberDrawer />
             {
                 (selectedInvite) &&
                 <Modal

@@ -12,8 +12,8 @@ import LoginPage from './login/LoginPage'
 import CreateOrganizationPage from './organizations/create/CreateOrganizationPage'
 import PasswordRecoveryPage from './password-recovery/PasswordRecoveryPage'
 import { AppContextType, EmailAndPasswordCredentials, UserStoredSession } from './types'
-import OrganizationHomePage from './organizations/o/[profileName]/OrganizationHomePage'
-import OrganizationMembersPage from './organizations/o/[profileName]/members/OrganizationMembersPage'
+import OrganizationHomePage from './o/[profileName]/OrganizationHomePage'
+import OrganizationMembersPage from './o/[profileName]/members/OrganizationMembersPage'
 import MyAccountPage from './my-account/MyAccountPage'
 import JoinOrganizationPage from './join-organization/JoinOrganizationPage'
 
@@ -62,8 +62,7 @@ function App() {
     },
     logout: () => {
       // Store the user session in the local storage
-      UserSessionStore.clear()
-      SessionCredentialsStore.clear()
+      localStorage.clear()
 
       window.location.replace('/login')
 

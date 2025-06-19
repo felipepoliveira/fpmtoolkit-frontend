@@ -1,3 +1,12 @@
+import { OrganizationMemberRole } from "./organization-member"
+
+/**
+ * Type used in roles stored in session returned by the back-end
+ */
+interface GrantedAuthority {
+    authority: string
+}
+
 /**
  * User model
  */
@@ -29,15 +38,21 @@ export interface UserModel {
  */
 export type StlRole = "ROLE_STL_MOST_SECURE" | "ROLE_STL_SAME_SESSION" | "ROLE_STL_SECURE"
 
-/**
- * Store all roles related to user member role
- */
-export type UserMemberRole = "ROLE_ORG_ADMINISTRATOR" | "ROLE_ORG_MEMBER_ADMINISTRATOR"
+export type OrganizationMemberSessionRole = "ROLE_ORG_ADMINISTRATOR" | "ROLE_ORG_MEMBER_ADMINISTRATOR"
+
+
 
 /**
  * Store all roles that can be stored in the user session
  */
-export type UserSessionRole = StlRole | UserMemberRole
+export type UserSessionRole = StlRole | OrganizationMemberSessionRole
+
+/**
+ * 
+ */
+type RoleMap = {
+    [K in UserSessionRole]: GrantedAuthority;
+}
 
 /**
  * Represents the user session
@@ -58,7 +73,7 @@ export interface UserSession {
     /**
      * The user session roles
      */
-    roles: UserSessionRole[],
+    roles: RoleMap,
     /**
      * Date when the session was created
      */

@@ -34,9 +34,9 @@ export default function AuthLayout(): JSX.Element {
 
                 return userSession
             },
-            checkRole(roles: UserSessionRole[]): boolean {
+            hasRole(roles: UserSessionRole[]): boolean {
                 const userRoles = this.authenticatedUser().session.roles;
-                return roles.some(role => userRoles.includes(role));
+                return roles.some(role => userRoles[role]);
             },
             logout: (): Promise<void> => {
                 UserSessionStore.clear()

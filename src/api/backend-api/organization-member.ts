@@ -1,4 +1,4 @@
-import { OrganizationMemberModel } from "../../types/backend-api/organization-member";
+import { OrganizationMemberModel, OrganizationMemberRole } from "../../types/backend-api/organization-member";
 import { PaginationMetadata } from "../../types/backend-api/pagination";
 import BackendApi from "./backend-api";
 
@@ -7,6 +7,16 @@ import BackendApi from "./backend-api";
  */
 interface IngressByInviteRequest {
     token: string
+}
+
+/**
+ * Payload used in [PUT] /api/organizations/:organizationUuid/members/:targetMemberUuid
+ */
+interface UpdateOrganizationMemberRequest {
+    /**
+     * The roles of the organization member
+     */
+    roles: OrganizationMemberRole[]
 }
 
 export const OrganizationMemberService = {
@@ -43,4 +53,15 @@ export const OrganizationMemberService = {
         const queryParameters = `pagination=true&page=${page}&limit=${limit}`
         return  (await (BackendApi.get(`/api/organizations/${organizationUuid}/members?${queryParameters}`))).data
     },
+
+    /**
+     * Update the organization member in the database
+     * @param organizationUuid 
+     * @param targetMemberUuid 
+     * @param payload 
+     * @returns 
+     */
+    update: async (organizationUuid: string, targetMemberUuid: string, payload: UpdateOrganizationMemberRequest): Promise<OrganizationMemberModel> => {
+        return  (await (BackendApi.put(`/api/organizations/${organizationUuid}/members/${targetMemberUuid}`, payload))).data
+    }
 }

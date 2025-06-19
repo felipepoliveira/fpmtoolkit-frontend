@@ -1,17 +1,15 @@
-import { DashboardOutlined, LoadingOutlined, ProjectOutlined, SettingOutlined, TeamOutlined } from "@ant-design/icons"
+import { LoadingOutlined, TeamOutlined } from "@ant-design/icons"
 import { Layout, Menu, MenuProps, theme, Typography } from "antd"
 import Sider from "antd/es/layout/Sider"
 import { Content } from "antd/es/layout/layout"
-import { useContext, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { OrganizationModel } from "../../../../types/backend-api/organization"
-import NavigationBar from "../../../@components/NavigationBar/NavigationBar"
-import ReadContainer from "../../../@components/ReadContainer/ReadContainer"
-import { AuthenticatedAppContext } from "../../../AuthenticatedApp"
+import { OrganizationModel } from "../../../types/backend-api/organization"
+import NavigationBar from "../../@components/NavigationBar/NavigationBar"
+import ReadContainer from "../../@components/ReadContainer/ReadContainer"
 import { useSelectedOrganizationProvider } from "./hooks"
 
 export default function OrganizationHomePage(): React.ReactNode {
-    const authenticatedAppContext = useContext(AuthenticatedAppContext)
     const { selectedOrganizationProvider, profileName } = useSelectedOrganizationProvider()
     const navigate = useNavigate()
     const [pageState, setPageState] = useState<'loading' | 'error' | 'ready'>('loading')
