@@ -10,6 +10,7 @@ export default function Section({ style, ...props}: SectionProps): React.ReactNo
         border: '1px solid #cccccc',
         borderRadius: '16px',
         padding: '24px 32px',
+        marginBottom: '24px',
         ...style
     }
     

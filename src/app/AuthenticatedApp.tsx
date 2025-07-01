@@ -1,15 +1,17 @@
+import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown, Layout, MenuProps, Typography } from "antd";
-import { Footer, Header } from "antd/es/layout/layout";
+import { Header } from "antd/es/layout/layout";
 import { createContext, JSX, useContext, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router";
 import UserOrganizationsService from "../api/backend-api/me/user-organizations";
 import SessionCredentialsStore from "../store/session-credentials";
 import UserSessionStore from "../store/user-session";
 import { OrganizationModel } from "../types/backend-api/organization";
+import { StlRole, UserSessionRole } from "../types/backend-api/user";
+import StlElevationModal, { StlElevationEvent } from "./@components/StlElevationModal/StlElevationModal";
 import { AppContext } from "./App";
-import { AuthenticatedAppContextType, UserStoredSession } from "./types";
-import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
-import { UserSessionRole } from "../types/backend-api/user";
+import { AuthenticatedAppContextType, HasRequiredStlEvent, UserStoredSession } from "./types";
+import AuthenticationService from "../api/backend-api/authentication";
 
 
 export const AuthenticatedAppContext = createContext<AuthenticatedAppContextType>({} as AuthenticatedAppContextType)
@@ -20,8 +22,10 @@ export default function AuthLayout(): JSX.Element {
     const navigate = useNavigate()
     const [state, setState] = useState<'loading' | 'error' | 'ready'>('loading')
     const [selectedOrganization, setSelectedOrganization] = useState<OrganizationModel | undefined>(undefined)
+    const [showStlElevationModal, setShowStlElevationModal] = useState(false)
     const [userOrganizations, setUserOrganization] = useState<OrganizationModel[] | undefined>(undefined)
     const [userOrganizationsPage, setUserOrganizationsPage] = useState(1)
+    const [stlElevationModalCallback, setStlElevationModalCallback] = useState<{ event: HasRequiredStlEvent } | undefined>(undefined)
 
     // The authenticated app context instance
     const authenticatedAppContext = useMemo(() => {
@@ -33,6 +37,19 @@ export default function AuthLayout(): JSX.Element {
                 }
 
                 return userSession
+            },
+            checkMinimumStl: async (stlRole: StlRole, callback: HasRequiredStlEvent) => {
+                const currentSession = await AuthenticationService.fetchSessionData()
+
+                // if the current session contains the required role, approved it
+                if (currentSession.roles[stlRole]) {
+                    callback({ hasRequiredStl: true })
+                    return
+                }
+                
+                // open the modal so the user can try to elevate its STL
+                setShowStlElevationModal(true)
+                setStlElevationModalCallback({ event: callback })
             },
             hasRole(roles: UserSessionRole[]): boolean {
                 const userRoles = this.authenticatedUser().session.roles;
@@ -101,6 +118,18 @@ export default function AuthLayout(): JSX.Element {
         { key: '' }
     ]
 
+    function onStlElevationFinished(event: StlElevationEvent) {
+        if (event.success && stlElevationModalCallback) {
+            stlElevationModalCallback.event({
+                hasRequiredStl: event.success
+            })
+        }
+
+        // undef the STL elevation modal callback
+        setStlElevationModalCallback(undefined)
+        setShowStlElevationModal(false)
+    }
+
 
     return (
         <AuthenticatedAppContext.Provider value={authenticatedAppContext}>
@@ -144,6 +173,11 @@ export default function AuthLayout(): JSX.Element {
                     <Outlet />
                 </div>
             </Layout>
+            <StlElevationModal 
+                open={showStlElevationModal} 
+                onCancel={() => setShowStlElevationModal(false)}
+                onFinish={onStlElevationFinished} 
+            />
         </AuthenticatedAppContext.Provider>
     )
 }

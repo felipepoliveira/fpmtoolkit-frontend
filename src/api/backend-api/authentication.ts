@@ -42,6 +42,13 @@ interface GenerateAuthenticationTokenWithEmailAndPasswordRequest {
     password: string,
 }
 
+interface GenerateAuthenticationTokenWithPasswordRequest {
+    /**
+     * The password used to authenticate the user
+     */
+    password: string,
+}
+
 /**
  * Response payload for [POST]/api/auth/public/tokens/email-and-password service
  */
@@ -77,6 +84,14 @@ interface RefreshTokenRequest {
 
 /// Services
 const AuthenticationService = {
+     /**
+     * Return session data of the authenticated user
+     * @param token 
+     * @returns 
+     */
+    fetchSessionData: async(): Promise<UserSession> => {
+        return (await BackendApi.get("/api/auth/session")).data
+    },
     /**
      * Return session data of the provided token
      * @param token 
@@ -107,6 +122,15 @@ const AuthenticationService = {
     },
 
     /**
+     * Generate a new authentication token for the authenticated client using its given password as authentication method
+     * @param payload 
+     * @returns 
+     */
+    generateAuthenticationTokenWithPassword: async (payload: GenerateAuthenticationTokenWithPasswordRequest): Promise<GenerateAuthenticationTokenWithEmailAndPasswordResponse> => {
+        return (await BackendApi.post("/api/auth/tokens/password", payload)).data
+    },
+
+    /**
      * Checks if the email is available to use
      * @param email Email to check
      * @returns {Promise<IsEmailAvailableToUseResponse>}
@@ -122,6 +146,14 @@ const AuthenticationService = {
      */
     refreshToken: async(payload: RefreshTokenRequest): Promise<GenerateAuthenticationTokenWithEmailAndPasswordResponse> => {
         return (await BackendApi.post(`/api/auth/tokens/refresh`, payload)).data
+    },
+
+    /**
+     * Send the primary email confirmation mail to the authenticated user registered primary email
+     * @returns 
+     */
+    sendPrimaryEmailConfirmationMail: async(): Promise<void> => {
+        return await BackendApi.post(`/api/auth/send-primary-email-confirmation-mail`)
     }
 }
 

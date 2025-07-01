@@ -20,6 +20,17 @@ interface UpdateOrganizationMemberRequest {
 }
 
 export const OrganizationMemberService = {
+
+    /**
+     * Change the organization owner to the organization member identified by 'targetMemberUuid' parameter
+     * @param organizationUuid  - The UUID of the organization
+     * @param targetMemberUuid  - The UUID of the organization member that will be the owner of the organization
+     * @returns 
+     */
+    changeOrganizationOwner: async (organizationUuid: string, targetMemberUuid: string): Promise<OrganizationMemberModel> => {
+        return  (await (BackendApi.put(`/api/organizations/${organizationUuid}/members/${targetMemberUuid}/set-to-owner`))).data
+    },
+
     /**
      * Return all organization members of the given organization using pagination
      * @param organizationUuid 
@@ -52,6 +63,19 @@ export const OrganizationMemberService = {
     paginationByOrganization: async (organizationUuid: string, page: number, limit: number = 10): Promise<PaginationMetadata> => {
         const queryParameters = `pagination=true&page=${page}&limit=${limit}`
         return  (await (BackendApi.get(`/api/organizations/${organizationUuid}/members?${queryParameters}`))).data
+    },
+
+    /**
+     * Return the organization membership of the authenticated user from the given organization identified by 'organizationUuid'
+     * @param organizationUuid 
+     * @returns 
+     */
+    me: async (organizationUuid: string): Promise<OrganizationMemberModel> => {
+        return  (await (BackendApi.get(`/api/organizations/${organizationUuid}/members/me`))).data
+    },
+
+    removeFromOrganization: async (organizationUuid: string, targetMemberUuid: string): Promise<OrganizationMemberModel> => {
+        return  (await (BackendApi.delete(`/api/organizations/${organizationUuid}/members/${targetMemberUuid}`))).data
     },
 
     /**

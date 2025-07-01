@@ -22,7 +22,7 @@ export interface UserModel {
     /**
      * When the primary email was confirmed
      */
-    primaryEmailConfirmedAt: string,
+    primaryEmailConfirmedAt?: string,
     /**
      * User presentation name
      */

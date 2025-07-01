@@ -16,6 +16,7 @@ import OrganizationHomePage from './o/[profileName]/OrganizationHomePage'
 import OrganizationMembersPage from './o/[profileName]/members/OrganizationMembersPage'
 import MyAccountPage from './my-account/MyAccountPage'
 import JoinOrganizationPage from './join-organization/JoinOrganizationPage'
+import ChangePrimaryEmailPage from './my-account/change-primary-email/ChangePrimaryEmailPage'
 
 
 
@@ -82,6 +83,7 @@ function App() {
           <Route element={<AuthLayout />}>
             <Route path='/' element={<Home />} />
             <Route path='/my-account' element={<MyAccountPage />} />
+            <Route path='/my-account/change-primary-email' element={<ChangePrimaryEmailPage />} />
             <Route path='/o/:profileName' element={<OrganizationHomePage />} />
             <Route path='/o/:profileName/members' element={<OrganizationMembersPage />} />
             <Route path='/organizations/create' element={<CreateOrganizationPage />} />

@@ -1,7 +1,7 @@
 import { MessageInstance } from "antd/es/message/interface";
 import { NotificationInstance } from "antd/es/notification/interface";
 import { OrganizationModel } from "../types/backend-api/organization";
-import { UserModel, UserSessionRole, UserSession } from "../types/backend-api/user";
+import { UserModel, UserSessionRole, UserSession, StlRole } from "../types/backend-api/user";
 
 export interface AppContextType {
     /**
@@ -36,11 +36,20 @@ export interface AppContextType {
     notification: NotificationInstance
 }
 
+export type HasRequiredStlEvent = (event: { hasRequiredStl: boolean }) => void
+
 export interface AuthenticatedAppContextType {
     /**
      * @returns Return data about the authenticated user session
      */
     authenticatedUser: () => UserStoredSession,
+
+    /**
+     * 
+     * @param stlRole 
+     * @returns 
+     */
+    checkMinimumStl: (stlRole: StlRole, callback: HasRequiredStlEvent) => void,
 
     /**
      * Return a flag indicating if the authenticated user has one of the given roles

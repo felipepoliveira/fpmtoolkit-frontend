@@ -1,27 +1,27 @@
 import { CrownOutlined, DeleteOutlined, EditOutlined, LoadingOutlined, MenuOutlined, SaveOutlined, SendOutlined, UserAddOutlined } from "@ant-design/icons"
-import { Badge, Button, Checkbox, CheckboxChangeEvent, Divider, Drawer, Dropdown, Empty, Form, Input, Modal, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
+import { Badge, Button, CheckboxChangeEvent, Divider, Drawer, Dropdown, Empty, Form, Input, Modal, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
 import { ItemType } from "antd/es/breadcrumb/Breadcrumb"
 import { FormProps, useForm } from "antd/es/form/Form"
 import { ColumnType, TablePaginationConfig } from "antd/es/table"
 import TabPane from "antd/es/tabs/TabPane"
+import Paragraph from "antd/es/typography/Paragraph"
+import Title from "antd/es/typography/Title"
 import { useContext, useEffect, useMemo, useRef, useState } from "react"
 import ApiError from "../../../../api/backend-api/api-error"
 import { OrganizationMemberService } from "../../../../api/backend-api/organization-member"
 import { OrganizationMemberInviteService } from "../../../../api/backend-api/organization-member-invite"
+import { mapConditionally as conditionalMap, mapConditionally } from "../../../../commons/array"
 import { I18nRegion } from "../../../../types/backend-api/i18n-region"
-import { OrganizationModel } from "../../../../types/backend-api/organization"
 import { getLabeledOrganizationMemberRole, getLabeledOrganizationMemberRoles, OrganizationMemberModel, OrganizationMemberRole } from "../../../../types/backend-api/organization-member"
 import { OrganizationMemberInviteModel } from "../../../../types/backend-api/organization-member-invite"
 import { PaginationMetadata, parsePaginationMetadataToAntTablePaginationConfig } from "../../../../types/backend-api/pagination"
 import NavigationBar from "../../../@components/NavigationBar/NavigationBar"
 import ReadContainer from "../../../@components/ReadContainer/ReadContainer"
+import RoleCheckbox from "../../../@components/RoleCheckbox/RoleCheckbox"
 import { AppContext } from "../../../App"
-import { useSelectedOrganizationProvider } from "../hooks"
 import { AuthenticatedAppContext } from "../../../AuthenticatedApp"
 import { useRoleFeedbackText } from "../../../hooks"
-import RoleCheckbox from "../../../@components/RoleCheckbox/RoleCheckbox"
-import Title from "antd/es/typography/Title"
-import { mapConditionally as conditionalMap } from "../../../../commons/array"
+import { SelectedOrganization, useSelectedOrganizationProvider } from "../hooks"
 
 // Store the amount of items per page on the tables
 const ItemsPerPage = 20
@@ -49,9 +49,10 @@ interface ResendInviteFormType {
 export default function OrganizationMembersPage(): React.ReactNode {
     const appContext = useContext(AppContext)
     const authAppContext = useContext(AuthenticatedAppContext)
-    const { selectedOrganizationProvider, profileName } = useSelectedOrganizationProvider()
+    const { userData } = authAppContext.authenticatedUser()
+    const { selectedOrganizationProvider, profileName, clearSelectedOrganizationCache } = useSelectedOrganizationProvider()
 
-    const [selectedOrganization, setSelectedOrganization] = useState<OrganizationModel | undefined>(undefined)
+    const [selectedOrganization, setSelectedOrganization] = useState<SelectedOrganization | undefined>(undefined)
     const [pageState, setPageState] = useState<'loading' | 'error' | 'ready'>('loading')
     const [selectedTab, setSelectedTab] = useState<SelectedTab>('activeMembers')
     const [loading, setLoading] = useState(false)
@@ -63,12 +64,14 @@ export default function OrganizationMembersPage(): React.ReactNode {
     const [showInviteDrawer, setShowInviteDrawer] = useState<boolean>(false)
     const [showResendInviteDrawer, setShowResendInviteDrawer] = useState<boolean>(false)
     const [selectedInvite, setSelectedInvite] = useState<OrganizationMemberInviteModel | undefined>(undefined)
+    const [showSetOrganizationMemberOwnerModal, setShowSetOrganizationMemberOwnerModal] = useState(false)
     // control the state of the members table
     const [members, setMembers] = useState<OrganizationMemberModel[] | undefined>(undefined)
     const [membersPagination, setMembersPagination] = useState<PaginationMetadata | undefined>(undefined)
     const [membersPage, setMembersPage] = useState<number>(1)
     const [selectedMember, setSelectedMember] = useState<OrganizationMemberModel | undefined>(undefined)
     const [showManageMemberDrawer, setShowManageMemberDrawer] = useState<boolean>(false)
+    const [showDeleteMemberModal, setShowDeleteMemberModal] = useState<boolean>(false)
 
     const sendInviteButtonRef = useRef<HTMLButtonElement>(null)
     const [sendInviteForm] = useForm<SendInviteFormType>()
@@ -88,7 +91,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
         }
 
         return [
-            { title: selectedOrganization.presentationName, key: `/o/${selectedOrganization.profileName}` },
+            { title: selectedOrganization.organization.presentationName, key: `/o/${selectedOrganization.organization.profileName}` },
         ]
 
     }, [selectedOrganization])
@@ -113,6 +116,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
         return parsePaginationMetadataToAntTablePaginationConfig(invitesPagination, invitesPage, (page) => setInvitesPage(page))
     }, [invitesPagination, invitesPage])
 
+
     // Create the members table pagination config into a React memo
     const membersTablePaginationConfig: TablePaginationConfig | undefined = useMemo(() => {
         if (membersPagination === undefined) {
@@ -125,8 +129,8 @@ export default function OrganizationMembersPage(): React.ReactNode {
     // fetch the selected organization using provider hook
     useEffect(() => {
         selectedOrganizationProvider()
-            .then((organization: OrganizationModel) => {
-                setSelectedOrganization(organization)
+            .then((selectedOrganization: SelectedOrganization) => {
+                setSelectedOrganization(selectedOrganization)
                 setPageState('ready')
             })
             .catch((error: Error) => {
@@ -144,7 +148,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
         }
 
         // fetch the pagination from the backend api
-        OrganizationMemberService.paginationByOrganization(selectedOrganization.uuid, membersPage, ItemsPerPage)
+        OrganizationMemberService.paginationByOrganization(selectedOrganization.organization.uuid, membersPage, ItemsPerPage)
             .then((pagination: PaginationMetadata) => {
                 setMembersPagination(pagination)
             })
@@ -154,7 +158,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
             })
 
         // fetch the pagination from the backend api
-        OrganizationMemberInviteService.paginationByOrganization(selectedOrganization.uuid, invitesPage, ItemsPerPage)
+        OrganizationMemberInviteService.paginationByOrganization(selectedOrganization.organization.uuid, invitesPage, ItemsPerPage)
             .then((pagination: PaginationMetadata) => {
                 setInvitesPagination(pagination)
             })
@@ -167,13 +171,12 @@ export default function OrganizationMembersPage(): React.ReactNode {
 
     // fetch the members of the organization using pagination
     useEffect(() => {
-        console.log("Why are you not being called?")
         // do not fetch data until the membersPagination is loaded
         if (membersPagination === undefined || selectedOrganization === undefined) {
             return
         }
 
-        OrganizationMemberService.findByOrganization(selectedOrganization.uuid, membersPage, membersPagination.itemsPerPage)
+        OrganizationMemberService.findByOrganization(selectedOrganization.organization.uuid, membersPage, membersPagination.itemsPerPage)
             .then((members: OrganizationMemberModel[]) => {
                 setMembers(members)
             })
@@ -190,7 +193,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
             return
         }
 
-        OrganizationMemberInviteService.findByOrganization(selectedOrganization.uuid, invitesPage, invitesPagination.itemsPerPage)
+        OrganizationMemberInviteService.findByOrganization(selectedOrganization.organization.uuid, invitesPage, invitesPagination.itemsPerPage)
             .then((invites: OrganizationMemberInviteModel[]) => {
                 setInvites(invites)
             })
@@ -294,9 +297,17 @@ export default function OrganizationMembersPage(): React.ReactNode {
             key: 'memberType',
             render: (_, record: OrganizationMemberModel) => {
                 return (
-                    <Tooltip title="Dono da organização">
-                        <CrownOutlined style={{ fontSize: '20px' }} />
-                    </Tooltip>
+                    <>
+                        {
+                            (record.isOrganizationOwner)
+                                ?
+                                <Tooltip title="Dono da organização">
+                                    <CrownOutlined style={{ fontSize: '20px' }} />
+                                </Tooltip>
+                                :
+                                <></>
+                        }
+                    </>
                 )
             }
         },
@@ -320,6 +331,28 @@ export default function OrganizationMembersPage(): React.ReactNode {
                                             setShowManageMemberDrawer(true)
                                         }
                                     },
+                                    {
+
+                                        disabled: (member.isOrganizationOwner), // can't mess up with this guy
+                                        key: 'delete-member',
+                                        label: 'Remover membro',
+                                        icon: <DeleteOutlined />,
+                                        onClick: () => {
+                                            setSelectedMember(member)
+                                            setShowDeleteMemberModal(true)
+                                        }
+                                    },
+                                    {
+
+                                        disabled: (member.isOrganizationOwner || !selectedOrganization?.authenticatedUserMembership.isOrganizationOwner), // only the organization owner can do that
+                                        key: 'set-to-owner',
+                                        label: 'Definir como dono da organização',
+                                        icon: <CrownOutlined />,
+                                        onClick: () => {
+                                            setSelectedMember(member)
+                                            checkForStlBeforeOpeningSetOrganizationOwnerModal()
+                                        }
+                                    },
                                 ]
                             }}
                         >
@@ -338,10 +371,8 @@ export default function OrganizationMembersPage(): React.ReactNode {
         }
 
         setLoading(true)
-        OrganizationMemberInviteService.remove(selectedOrganization.uuid, invite.uuid)
+        OrganizationMemberInviteService.remove(selectedOrganization.organization.uuid, invite.uuid)
             .then(() => {
-
-
                 // update ui (items + pagination)
                 setInvites(invites.filter(i => i.uuid !== invite.uuid))
                 setInvitesPagination({
@@ -368,13 +399,21 @@ export default function OrganizationMembersPage(): React.ReactNode {
             })
     }
 
+    function checkForStlBeforeOpeningSetOrganizationOwnerModal() {
+        authAppContext.checkMinimumStl("ROLE_STL_MOST_SECURE", (event) => {
+            if (event.hasRequiredStl) {
+                setShowSetOrganizationMemberOwnerModal(true)
+            }
+        })
+    }
+
     const resendInvite: FormProps<ResendInviteFormType>['onFinish'] = (values) => {
         // ignore on required fields
         if (!selectedOrganization || !selectedInvite) {
             return
         }
         setLoading(true)
-        OrganizationMemberInviteService.resendMail(selectedOrganization.uuid, selectedInvite.uuid, {
+        OrganizationMemberInviteService.resendMail(selectedOrganization.organization.uuid, selectedInvite.uuid, {
             ...values
         })
             .then(() => {
@@ -408,7 +447,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
             return
         }
 
-        OrganizationMemberInviteService.createNewInvite(selectedOrganization.uuid, values)
+        OrganizationMemberInviteService.createNewInvite(selectedOrganization.organization.uuid, values)
             .then(newInvite => {
                 setInvites([newInvite, ...invites])
                 setInvitesPagination({
@@ -448,6 +487,72 @@ export default function OrganizationMembersPage(): React.ReactNode {
             .finally(() => {
                 setShowInviteDrawer(false)
             })
+    }
+
+    function DeleteMemberModal(): React.ReactElement {
+
+        /**
+         * Remove a organization member from the organization
+         * @param memberToDelete 
+         */
+        function deleteMember(memberToDelete: OrganizationMemberModel) {
+            setLoading(true)
+
+
+            // organization must be selected so the operation can occur
+            if (!selectedOrganization || !members || !membersPagination) {
+                return
+            }
+
+            OrganizationMemberService.removeFromOrganization(selectedOrganization.organization.uuid, memberToDelete.uuid)
+                .then(removedMember => {
+                    appContext.message.success({
+                        content: `Membro ${memberToDelete.user.presentationName} removido com sucesso`,
+                        duration: 2
+                    })
+
+                    // update the UI removing the removed member
+                    setMembersPagination({
+                        ...membersPagination,
+                        currentPage: membersPagination.currentPage - 1
+                    })
+                    setMembers(members.filter(m => m.uuid !== removedMember.uuid))
+                    setShowDeleteMemberModal(false)
+                })
+                .catch(e => {
+                    console.error(e)
+                    appContext.message.error({
+                        content: "Um erro inesperado ocorreu ao tentar remover membro da organização",
+                        duration: 3
+                    })
+
+                })
+                .finally(() => {
+                    setLoading(false)
+                })
+        }
+
+        return (
+            <>
+                {
+                    (selectedMember)
+                        ?
+                        <Modal
+                            loading={loading}
+                            title={`Remover membro da organização?`}
+                            open={showDeleteMemberModal}
+                            onOk={() => deleteMember(selectedMember)}
+                            onCancel={() => setShowDeleteMemberModal(false)}
+                            key='deleteMemberModal'
+                        >
+                            <Typography>Deseja remover o membro <b>{selectedMember.user.presentationName}</b> da organização?</Typography>
+                        </Modal>
+                        :
+                        <></>
+                }
+
+            </>
+        )
     }
 
     function ManageOrganizationMemberDrawer(): React.ReactNode {
@@ -506,28 +611,28 @@ export default function OrganizationMembersPage(): React.ReactNode {
                 return
             }
             setLoading(true)
-            OrganizationMemberService.update(selectedOrganization.uuid, selectedMember.uuid, {
+            OrganizationMemberService.update(selectedOrganization.organization.uuid, selectedMember.uuid, {
                 roles: selectedRoles
             })
-            .then((updatedMember) => {
-                appContext.message.success({
-                    content: 'Alterações realizadas com sucesso',
-                    duration: 2
-                })
+                .then((updatedMember) => {
+                    appContext.message.success({
+                        content: 'Alterações realizadas com sucesso',
+                        duration: 2
+                    })
 
-                setMembers(conditionalMap(members, (m) => m.uuid === updatedMember.uuid, updatedMember))
-                setSelectedMember(updatedMember)
-            })
-            .catch(e => {
-                console.error(e)
-                appContext.message.error({
-                    content: 'Um erro inesperado ocorreu ao realizar alterações',
-                    duration: 3
+                    setMembers(conditionalMap(members, (m) => m.uuid === updatedMember.uuid, updatedMember))
+                    setSelectedMember(updatedMember)
                 })
-            })
-            .finally(() => {
-                setLoading(false)
-            })
+                .catch(e => {
+                    console.error(e)
+                    appContext.message.error({
+                        content: 'Um erro inesperado ocorreu ao realizar alterações',
+                        duration: 3
+                    })
+                })
+                .finally(() => {
+                    setLoading(false)
+                })
         }
 
 
@@ -549,7 +654,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                 <Divider />
                 <Title level={5}>Permissões de membro na organização</Title>
                 {/* The administrator role checkbox should be managed individually for better UX */}
-                <RoleCheckbox checked={selectedRoles.indexOf(labeledAdministratorRole.value) >= 0} source={labeledAdministratorRole} style={{ marginTop: '12px' }} onChange={onRoleSelectionChange}/>
+                <RoleCheckbox checked={selectedRoles.indexOf(labeledAdministratorRole.value) >= 0} source={labeledAdministratorRole} style={{ marginTop: '12px' }} onChange={onRoleSelectionChange} />
                 <br />
                 {/* Render all other roles */}
                 {
@@ -564,6 +669,80 @@ export default function OrganizationMembersPage(): React.ReactNode {
                     ))
                 }
             </Drawer>
+        )
+    }
+
+    function SetOrganizationMemberOwnerModal(): React.ReactElement {
+        // Render nothing if required state is undef
+        if (!selectedMember || !selectedOrganization) {
+            return <></>
+        }
+
+        const [loading, setLoading] = useState(false)
+
+        function changeOrganizationOwner() {
+            // do nothing if the selected mem
+            if (!selectedMember || !selectedOrganization || !members) {
+                return
+            }
+
+            setLoading(false)
+            OrganizationMemberService.changeOrganizationOwner(selectedOrganization.organization.uuid, selectedMember.uuid)
+            .then(updatedMember => {
+        
+                let newMembersList = [...members]
+
+                // if the owner is on the list remove the organization owner mark on it
+                const ownerOnTheList = newMembersList.find(m => m.isOrganizationOwner)
+                if (ownerOnTheList) {
+                    newMembersList = mapConditionally(newMembersList, (m) => m.isOrganizationOwner, {...ownerOnTheList, isOrganizationOwner: false})
+                }
+                // set the target member as the organization owner
+                newMembersList = mapConditionally(newMembersList, (m) => m.uuid === updatedMember.uuid, updatedMember)
+
+                // update state, close modal, show feedback
+                setMembers(newMembersList)
+                setShowSetOrganizationMemberOwnerModal(false)
+
+                appContext.message.success({
+                    content: 'Dono da organização alterado com sucesso', 
+                    duration: 2
+                })
+                clearSelectedOrganizationCache()
+                
+            })
+            .catch(e => {
+                console.error(e)
+                appContext.message.error({
+                    content: 'Ocorreu um erro inesperado ao trocar dono da organização',
+                    duration: 3
+                })
+            })
+            .finally(() => {
+                setLoading(false)
+            })
+        }
+
+        return (
+            <Modal
+                open={showSetOrganizationMemberOwnerModal}
+                okText='Eu entendo o risco'
+                cancelText='Cancelar'
+                onCancel={() => setShowSetOrganizationMemberOwnerModal(false)}
+                onOk={changeOrganizationOwner}
+                loading={loading}
+            >
+                <Title level={4}>Trocar dono da organização</Title>
+                <Paragraph>
+                    Ao trocar o dono da organização você deixará de ter o controle <b>total</b> dela passando-o para o usuário
+                    <b>{selectedMember.user.presentationName} ({selectedMember.user.primaryEmail})</b>
+                </Paragraph>
+                <Paragraph>
+                    Além disso, seu usuário receberá automaticamente a permissão 'Administrador' para que ainda possa
+                    realizar operações de gestão na organização utilizando sua conta.
+                </Paragraph>
+                <Paragraph>Tem certeza que deseja prosseguir?</Paragraph>
+            </Modal>
         )
     }
 
@@ -716,6 +895,8 @@ export default function OrganizationMembersPage(): React.ReactNode {
                     </Form>
                 </Drawer>
             }
+            <DeleteMemberModal />
+            <SetOrganizationMemberOwnerModal />
             <ManageOrganizationMemberDrawer />
             {
                 (selectedInvite) &&

@@ -7,7 +7,7 @@ import { useNavigate } from "react-router"
 import { OrganizationModel } from "../../../types/backend-api/organization"
 import NavigationBar from "../../@components/NavigationBar/NavigationBar"
 import ReadContainer from "../../@components/ReadContainer/ReadContainer"
-import { useSelectedOrganizationProvider } from "./hooks"
+import { SelectedOrganization, useSelectedOrganizationProvider } from "./hooks"
 
 export default function OrganizationHomePage(): React.ReactNode {
     const { selectedOrganizationProvider, profileName } = useSelectedOrganizationProvider()
@@ -17,8 +17,8 @@ export default function OrganizationHomePage(): React.ReactNode {
 
     useEffect(() => {
         selectedOrganizationProvider()
-            .then((organization: OrganizationModel) => {
-                setSelectedOrganization(organization)
+            .then((selectedOrganization: SelectedOrganization) => {
+                setSelectedOrganization(selectedOrganization.organization)
                 setPageState('ready')
             })
             .catch((error: Error) => {
