@@ -17,6 +17,7 @@ import OrganizationMembersPage from './o/[profileName]/members/OrganizationMembe
 import MyAccountPage from './my-account/MyAccountPage'
 import JoinOrganizationPage from './join-organization/JoinOrganizationPage'
 import ChangePrimaryEmailPage from './my-account/change-primary-email/ChangePrimaryEmailPage'
+import ConfirmEmailPage from './confirm-email/ConfirmEmailPage'
 
 
 
@@ -82,6 +83,7 @@ function App() {
           {/* Authenticated-only pages */}
           <Route element={<AuthLayout />}>
             <Route path='/' element={<Home />} />
+            <Route path='/confirm-email' element={<ConfirmEmailPage />} />
             <Route path='/my-account' element={<MyAccountPage />} />
             <Route path='/my-account/change-primary-email' element={<ChangePrimaryEmailPage />} />
             <Route path='/o/:profileName' element={<OrganizationHomePage />} />

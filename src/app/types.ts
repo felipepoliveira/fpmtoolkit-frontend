@@ -67,6 +67,12 @@ export interface AuthenticatedAppContextType {
     logout: () => Promise<void>,
 
     /**
+     * Refresh the session data of the authenticated user
+     * @returns 
+     */
+    refreshAuthenticatedUserSession: () => Promise<void>,
+
+    /**
      * The organizations where the user is a member
      */
     organizations: OrganizationModel[],

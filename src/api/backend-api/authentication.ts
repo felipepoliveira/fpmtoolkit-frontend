@@ -29,6 +29,16 @@ interface ApiAuthenticationTokenPayload {
 }
 
 /**
+ * Request payload for [POST] /api/auth/confirm-primary-email-with-token
+ */
+interface ConfirmPrimaryEmailWithTokenRequest {
+    /**
+     * The confirmation token value
+     */
+    confirmationToken: string,
+}
+
+/**
  * Request payload for [POST]/api/auth/public/tokens/email-and-password service
  */
 interface GenerateAuthenticationTokenWithEmailAndPasswordRequest {
@@ -82,8 +92,19 @@ interface RefreshTokenRequest {
     organizationId?: string
 }
 
+
 /// Services
 const AuthenticationService = {
+
+    /**
+     * Confirm the primary email ownership using a confirmation token provided by the back-end API
+     * @param payload 
+     * @returns 
+     */
+    confirmPrimaryEmailWithToken: async(payload: ConfirmPrimaryEmailWithTokenRequest): Promise<void> => {
+        return await BackendApi.put("/api/auth/confirm-primary-email-with-token", payload)
+    },
+
      /**
      * Return session data of the authenticated user
      * @param token 

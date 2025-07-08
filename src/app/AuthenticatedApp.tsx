@@ -46,7 +46,7 @@ export default function AuthLayout(): JSX.Element {
                     callback({ hasRequiredStl: true })
                     return
                 }
-                
+
                 // open the modal so the user can try to elevate its STL
                 setShowStlElevationModal(true)
                 setStlElevationModalCallback({ event: callback })
@@ -60,6 +60,26 @@ export default function AuthLayout(): JSX.Element {
                 SessionCredentialsStore.clear()
 
                 //
+                return Promise.resolve()
+            },
+
+            refreshAuthenticatedUserSession: async () => {
+
+                // update user data and session into the store
+                const sessionCredentials = SessionCredentialsStore.get()
+                if (!sessionCredentials) {
+                    return Promise.reject("Session credentials does not exists on the store")
+                }
+                const userData = await AuthenticationService.fetchUserDataWithBearerToken(sessionCredentials)
+                const userSessionFromApi = await AuthenticationService.fetchSessionDataWithBearerToken(sessionCredentials)
+                const userSession = {
+                    userData: userData,
+                    session: userSessionFromApi
+                }
+
+                // store the session data in local storage
+                UserSessionStore.store(userSession)
+
                 return Promise.resolve()
             },
 
@@ -173,10 +193,10 @@ export default function AuthLayout(): JSX.Element {
                     <Outlet />
                 </div>
             </Layout>
-            <StlElevationModal 
-                open={showStlElevationModal} 
+            <StlElevationModal
+                open={showStlElevationModal}
                 onCancel={() => setShowStlElevationModal(false)}
-                onFinish={onStlElevationFinished} 
+                onFinish={onStlElevationFinished}
             />
         </AuthenticatedAppContext.Provider>
     )
