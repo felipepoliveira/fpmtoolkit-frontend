@@ -7,6 +7,40 @@ interface GrantedAuthority {
     authority: string
 }
 
+export interface PrimaryEmailChangeTokenPayload {
+  /**
+   * The user unique identification
+   */
+  userIdentifier: string;
+
+  /**
+   * The new primary e-mail
+   */
+  newPrimaryEmail: string;
+
+  /**
+   * When the token was issued
+   */
+  issuedAt: string; // ISO 8601 datetime format
+
+  /**
+   * When the token will expire
+   */
+  expiresAt: string; // ISO 8601 datetime format
+}
+
+export interface PrimaryEmailChangeTokenAndPayload {
+  /**
+   * The issued token
+   */
+  token: string;
+
+  /**
+   * The content of the token
+   */
+  payload: PrimaryEmailChangeTokenPayload;
+}
+
 /**
  * User model
  */
@@ -39,7 +73,6 @@ export interface UserModel {
 export type StlRole = "ROLE_STL_MOST_SECURE" | "ROLE_STL_SAME_SESSION" | "ROLE_STL_SECURE"
 
 export type OrganizationMemberSessionRole = "ROLE_ORG_ADMINISTRATOR" | "ROLE_ORG_MEMBER_ADMINISTRATOR"
-
 
 
 /**

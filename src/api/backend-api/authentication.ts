@@ -1,4 +1,4 @@
-import { UserModel, UserSession } from "../../types/backend-api/user";
+import { PrimaryEmailChangeTokenAndPayload, UserModel, UserSession } from "../../types/backend-api/user";
 import BackendApi from "./backend-api";
 
 /// Types
@@ -92,6 +92,15 @@ interface RefreshTokenRequest {
     organizationId?: string
 }
 
+/**
+ * Payload for [POST]/api/auth/send-primary-email-change-mail
+ */
+interface SendPrimaryEmailChangeMailRequest {
+    /**
+     * The new primary email
+     */
+    newPrimaryEmail: string,
+}
 
 /// Services
 const AuthenticationService = {
@@ -175,7 +184,17 @@ const AuthenticationService = {
      */
     sendPrimaryEmailConfirmationMail: async(): Promise<void> => {
         return await BackendApi.post(`/api/auth/send-primary-email-confirmation-mail`)
-    }
+    },
+
+    /**
+     * Send the primary email change mail. Also, this service returns a token that should be used
+     * to the primary email change operation completion
+     * @param payload 
+     * @returns 
+     */
+    sendPrimaryEmailChangeMail: async(payload: SendPrimaryEmailChangeMailRequest): Promise<PrimaryEmailChangeTokenAndPayload> => {
+        return (await BackendApi.post(`/api/auth/send-primary-email-change-mail`, payload)).data
+    },
 }
 
 export default AuthenticationService

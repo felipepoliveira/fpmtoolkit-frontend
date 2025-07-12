@@ -12,6 +12,12 @@ import AuthenticationService from "../../api/backend-api/authentication";
 import { AppContext } from "../App";
 import { FormProps, useForm } from "antd/es/form/Form";
 import PasswordInputWithStrengthChecker, { PasswordRank } from "../@components/PasswordInputWithStrengthChecker/PasswordInputWithStrengthChecker";
+import { AuthenticatedUserService } from "../../api/backend-api/me/auth-user";
+import ApiError from "../../api/backend-api/api-error";
+import AvailableEmailInput from "../@components/AvailableEmailInput/AvailableEmailInput";
+import SendPrimaryEmailChangeMailForm from "./@components/SendPrimaryEmailChangeMailForm/SendPrimaryEmailChangeMailForm";
+import { PrimaryEmailChangeTokenAndPayload } from "../../types/backend-api/user";
+import UpdatePrimaryEmailWithTokenForm from "./@components/UpdatePrimaryEmailWithTokenForm/UpdatePrimaryEmailWithTokenForm";
 
 export default function MyAccountPage(): React.ReactElement {
 
@@ -34,12 +40,27 @@ export default function MyAccountPage(): React.ReactElement {
         )
     }
 
+    interface PrimaryEmailSectionWidgetsType {
+        loading: boolean, 
+        emailChangeTokenAndPayload?: PrimaryEmailChangeTokenAndPayload,
+        newPrimaryEmailAvailableForUse: boolean,
+        showChangePrimaryEmailDrawer: boolean,
+    }
+
     function PrimaryEmailSection(): React.ReactElement {
 
-        const emailConfirmed = userData.primaryEmailConfirmedAt != undefined
-        const [loading, setLoading] = useState(false)
+        // States and contexts
+        const [widgetsStates, setWidgetsStates] = useState<PrimaryEmailSectionWidgetsType>({
+            loading: false,
+            emailChangeTokenAndPayload: undefined,
+            newPrimaryEmailAvailableForUse: true,
+            showChangePrimaryEmailDrawer: false,
+        })
 
-        function PrimaryEmailConfirmation(): React.ReactElement {
+        // Constants
+        const emailConfirmed = userData.primaryEmailConfirmedAt != undefined
+
+        function PrimaryEmailConfirmationAlert(): React.ReactElement {
 
             if (emailConfirmed) {
                 return (
@@ -54,7 +75,7 @@ export default function MyAccountPage(): React.ReactElement {
         }
 
         function sendEmailConfirmationMail() {
-            setLoading(true)
+            setWidgetsStates({ ...widgetsStates, loading: true })
             AuthenticationService.sendPrimaryEmailConfirmationMail()
                 .then(() => {
                     appContext.message.success({
@@ -70,9 +91,10 @@ export default function MyAccountPage(): React.ReactElement {
                     })
                 })
                 .finally(() => {
-                    setLoading(false)
+                    setWidgetsStates({ ...widgetsStates, loading: false })
                 })
         }
+
 
         return (
             <Section id="sec-primary-email">
@@ -83,16 +105,47 @@ export default function MyAccountPage(): React.ReactElement {
                     <MailOutlined />
                     <b>E-mail primário:</b> {userData.primaryEmail}
                 </Space>
-                <PrimaryEmailConfirmation />
+                <PrimaryEmailConfirmationAlert />
                 <Divider />
                 <Row justify="end">
                     <Space>
-                        <Button icon={<ClockCircleOutlined />} loading={loading} onClick={sendEmailConfirmationMail}>Enviar confirmação de e-mail</Button>
-                        <Link to={'/my-account/change-primary-email'}>
-                            <Button icon={<MailOutlined />} disabled={!emailConfirmed}>Alterar e-mail primário</Button>
-                        </Link>
+                        <Button icon={<ClockCircleOutlined />} loading={widgetsStates.loading} onClick={sendEmailConfirmationMail}>Enviar confirmação de e-mail</Button>
+                        <Button icon={<MailOutlined />} disabled={!emailConfirmed} onClick={() => setWidgetsStates({ ...widgetsStates, showChangePrimaryEmailDrawer: true })}>
+                            Alterar e-mail primário
+                        </Button>
                     </Space>
                 </Row>
+                <Drawer
+                    onClose={() => setWidgetsStates({ ...widgetsStates, showChangePrimaryEmailDrawer: false })}
+                    open={widgetsStates.showChangePrimaryEmailDrawer}
+                    title="Alterar e-mail primário"
+                    width={620}
+                >
+                    <Title level={5}>1. Insira o novo e-mail primário da sua conta</Title>
+                    <Paragraph>Você receberá um e-mail no endereço inserido acima com procedimentos para a troca do e-mail primário</Paragraph>
+                    <Divider />
+                    <SendPrimaryEmailChangeMailForm 
+                        onReset={() => setWidgetsStates({ ...widgetsStates, emailChangeTokenAndPayload: undefined })}
+                        onSuccessState={widgetsStates.emailChangeTokenAndPayload !== undefined}
+                        onSuccess={(tokenAndPayload) => setWidgetsStates({ ...widgetsStates, emailChangeTokenAndPayload: tokenAndPayload })} 
+                    />
+                    {
+                        (widgetsStates.emailChangeTokenAndPayload)
+                            ?
+                            <>
+                                <Title level={5}>2. Inserir código de confirmação</Title>
+                                <Paragraph>
+                                    No email enviado para {widgetsStates.emailChangeTokenAndPayload.payload.newPrimaryEmail} foi inserido um código para confirmação.
+                                    Insira-o abaixo para concluir a troca de e-mail primário.
+                                </Paragraph>
+                                <UpdatePrimaryEmailWithTokenForm 
+                                    source={widgetsStates.emailChangeTokenAndPayload} 
+                                />
+                            </>
+                            :
+                            <></>
+                    }
+                </Drawer>
             </Section>
         )
     }
@@ -154,8 +207,35 @@ export default function MyAccountPage(): React.ReactElement {
 
             return Promise.resolve()
         }
+
+        /**
+         * Function associated with a form action that update the password of the
+         * authenticated user
+         * @param form 
+         */
         const updatePassword: FormProps<UpdatePasswordForm>['onFinish'] = async (form) => {
             updatePasswordForm.resetFields()
+            setWidgetsStates({ ...widgetsStates, loading: true })
+            AuthenticatedUserService.updatePassword({
+                currentPassword: form.currentPassword,
+                newPassword: form.newPassword
+            })
+                .then(() => {
+                    appContext.message.success({
+                        content: "Senha alterada com sucesso",
+                        duration: 3
+                    })
+                })
+                .catch((e) => {
+                    console.error(e)
+                    appContext.message.error({
+                        content: "Um erro inesperado ocorreu ao mudar senha",
+                        duration: 3
+                    })
+                })
+                .finally(() => {
+                    setWidgetsStates({ ...widgetsStates, loading: false, showChangePasswordDrawer: false })
+                })
         }
 
         return (

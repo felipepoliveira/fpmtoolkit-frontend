@@ -97,7 +97,7 @@ export default function StlElevationModal({ onFinish, ...otherProps }: StlElevat
             loading={loading}
         >
             <Title level={4}>Confirmação de Segurança</Title>
-            <Paragraph>Olá {userData.presentationName}, insira sua senha abaixo para confirmar que é você</Paragraph>
+            <Paragraph>Olá {userData.presentationName}, insira sua senha abaixo para confirmação de segurança</Paragraph>
             <Divider />
             <Form
                 form={form}
