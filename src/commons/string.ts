@@ -15,3 +15,8 @@ export function getInitials(input: string): string {
 
     return splittedWords[0].charAt(0)
 }
+
+export function replaceAt(str: string, index: number, replacement: string): string {
+  if (index < 0 || index >= str.length) return str; // out of bounds
+  return str.slice(0, index) + replacement + str.slice(index + 1);
+}

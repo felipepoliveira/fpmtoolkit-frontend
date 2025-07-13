@@ -102,6 +102,18 @@ interface SendPrimaryEmailChangeMailRequest {
     newPrimaryEmail: string,
 }
 
+interface UpdatePrimaryEmailWithToken {
+    /**
+     * The confirmation code that could be found in the new email
+     */
+    confirmationCode: string,
+    /**
+     * The token that will authenticate the operation
+     */
+    token: string,
+    
+}
+
 /// Services
 const AuthenticationService = {
 
@@ -194,6 +206,15 @@ const AuthenticationService = {
      */
     sendPrimaryEmailChangeMail: async(payload: SendPrimaryEmailChangeMailRequest): Promise<PrimaryEmailChangeTokenAndPayload> => {
         return (await BackendApi.post(`/api/auth/send-primary-email-change-mail`, payload)).data
+    },
+
+    /**
+     * Update the authenticated user primary email using the token technique
+     * @param payload 
+     * @returns 
+     */
+    updatePrimaryEmailWithToken: async(payload: UpdatePrimaryEmailWithToken): Promise<UserModel> => {
+        return (await BackendApi.put(`/api/auth/update-primary-email-with-token`, payload)).data
     },
 }
 

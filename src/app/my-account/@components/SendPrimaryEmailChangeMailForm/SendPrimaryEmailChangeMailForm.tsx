@@ -99,7 +99,7 @@ export default function SendPrimaryEmailChangeMailForm(props: SendPrimaryEmailCh
                         const error = new ApiError(e)
                         if (error.errorType === 'TOO_MANY_REQUESTS') {
                             appContext.message.warning({
-                                content: 'Você acabou de enviar um e-mail para o endereço inserido. Aguarde alguns instantes para repetir a operação. Cheque sua caixa de entrada',
+                                content: 'Você acabou de solicitar a troca de e-mail primário. Aguarde 1 minuto para realizar outro pedido.',
                                 duration: 8
                             })
                         }
@@ -139,13 +139,13 @@ export default function SendPrimaryEmailChangeMailForm(props: SendPrimaryEmailCh
                     </Button>
                 </Form.Item>
                 {
-                    (props.onReset && props.onSuccessState)
-                        ?
-                        <Form.Item label={null}>
-                            <Link onClick={props.onReset}><EditOutlined /> Inserir outro e-mail</Link>
-                        </Form.Item>
-                        :
-                        <></>
+                    // (props.onReset && props.onSuccessState)
+                    //     ?
+                    //     <Form.Item label={null}>
+                    //         <Link onClick={props.onReset}><EditOutlined /> Inserir outro e-mail</Link>
+                    //     </Form.Item>
+                    //     :
+                    //     <></>
                 }
             </Form>
 

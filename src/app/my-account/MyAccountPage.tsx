@@ -1,29 +1,30 @@
+import { ClockCircleOutlined, KeyOutlined, MailOutlined } from "@ant-design/icons";
+import { Alert, Button, Divider, Drawer, Form, Input, Row, Space } from "antd";
+import { FormProps, useForm } from "antd/es/form/Form";
+import Paragraph from "antd/es/typography/Paragraph";
 import Title from "antd/es/typography/Title";
+import { useContext, useEffect, useState } from "react";
+import AuthenticationService from "../../api/backend-api/authentication";
+import { AuthenticatedUserService } from "../../api/backend-api/me/auth-user";
+import { PrimaryEmailChangeTokenAndPayload, UserModel } from "../../types/backend-api/user";
 import NavigationBar from "../@components/NavigationBar/NavigationBar";
+import PasswordInputWithStrengthChecker, { PasswordRank } from "../@components/PasswordInputWithStrengthChecker/PasswordInputWithStrengthChecker";
 import ReadContainer from "../@components/ReadContainer/ReadContainer";
 import Section from "../@components/Section/Section";
-import { Alert, Button, Col, Divider, Drawer, Form, Input, Row, Space } from "antd";
-import Paragraph from "antd/es/typography/Paragraph";
-import { Link } from "react-router";
-import { ClockCircleOutlined, KeyOutlined, MailOutlined } from "@ant-design/icons";
-import { useContext, useEffect, useState } from "react";
-import { AuthenticatedAppContext } from "../AuthenticatedApp";
-import AuthenticationService from "../../api/backend-api/authentication";
 import { AppContext } from "../App";
-import { FormProps, useForm } from "antd/es/form/Form";
-import PasswordInputWithStrengthChecker, { PasswordRank } from "../@components/PasswordInputWithStrengthChecker/PasswordInputWithStrengthChecker";
-import { AuthenticatedUserService } from "../../api/backend-api/me/auth-user";
-import ApiError from "../../api/backend-api/api-error";
-import AvailableEmailInput from "../@components/AvailableEmailInput/AvailableEmailInput";
+import { AuthenticatedAppContext } from "../AuthenticatedApp";
 import SendPrimaryEmailChangeMailForm from "./@components/SendPrimaryEmailChangeMailForm/SendPrimaryEmailChangeMailForm";
-import { PrimaryEmailChangeTokenAndPayload } from "../../types/backend-api/user";
 import UpdatePrimaryEmailWithTokenForm from "./@components/UpdatePrimaryEmailWithTokenForm/UpdatePrimaryEmailWithTokenForm";
 
 export default function MyAccountPage(): React.ReactElement {
 
     const appContext = useContext(AppContext)
     const authAppContext = useContext(AuthenticatedAppContext)
-    const { userData } = authAppContext.authenticatedUser()
+    const [userData, setUserData] = useState(authAppContext.authenticatedUser().userData)
+
+    function resetUserDataFromAppContext() {
+        setUserData(authAppContext.authenticatedUser().userData)
+    }
 
     /**
      * Section to manage user contact data
@@ -41,7 +42,7 @@ export default function MyAccountPage(): React.ReactElement {
     }
 
     interface PrimaryEmailSectionWidgetsType {
-        loading: boolean, 
+        loading: boolean,
         emailChangeTokenAndPayload?: PrimaryEmailChangeTokenAndPayload,
         newPrimaryEmailAvailableForUse: boolean,
         showChangePrimaryEmailDrawer: boolean,
@@ -72,6 +73,11 @@ export default function MyAccountPage(): React.ReactElement {
                     <Alert type="warning" showIcon message={'E-mail não confirmado'} />
                 )
             }
+        }
+
+        function onPrimaryEmailChange() {
+            setWidgetsStates({ ...widgetsStates, loading: false, emailChangeTokenAndPayload: undefined, showChangePrimaryEmailDrawer: false })
+            resetUserDataFromAppContext()
         }
 
         function sendEmailConfirmationMail() {
@@ -116,18 +122,18 @@ export default function MyAccountPage(): React.ReactElement {
                     </Space>
                 </Row>
                 <Drawer
-                    onClose={() => setWidgetsStates({ ...widgetsStates, showChangePrimaryEmailDrawer: false })}
+                    onClose={() => setWidgetsStates({ ...widgetsStates, emailChangeTokenAndPayload: undefined, showChangePrimaryEmailDrawer: false })}
                     open={widgetsStates.showChangePrimaryEmailDrawer}
                     title="Alterar e-mail primário"
                     width={620}
                 >
                     <Title level={5}>1. Insira o novo e-mail primário da sua conta</Title>
-                    <Paragraph>Você receberá um e-mail no endereço inserido acima com procedimentos para a troca do e-mail primário</Paragraph>
+                    <Paragraph>Você receberá um e-mail no endereço inserido com procedimentos para a troca do e-mail primário</Paragraph>
                     <Divider />
-                    <SendPrimaryEmailChangeMailForm 
+                    <SendPrimaryEmailChangeMailForm
                         onReset={() => setWidgetsStates({ ...widgetsStates, emailChangeTokenAndPayload: undefined })}
                         onSuccessState={widgetsStates.emailChangeTokenAndPayload !== undefined}
-                        onSuccess={(tokenAndPayload) => setWidgetsStates({ ...widgetsStates, emailChangeTokenAndPayload: tokenAndPayload })} 
+                        onSuccess={(tokenAndPayload) => setWidgetsStates({ ...widgetsStates, emailChangeTokenAndPayload: tokenAndPayload })}
                     />
                     {
                         (widgetsStates.emailChangeTokenAndPayload)
@@ -138,8 +144,9 @@ export default function MyAccountPage(): React.ReactElement {
                                     No email enviado para {widgetsStates.emailChangeTokenAndPayload.payload.newPrimaryEmail} foi inserido um código para confirmação.
                                     Insira-o abaixo para concluir a troca de e-mail primário.
                                 </Paragraph>
-                                <UpdatePrimaryEmailWithTokenForm 
-                                    source={widgetsStates.emailChangeTokenAndPayload} 
+                                <UpdatePrimaryEmailWithTokenForm
+                                    emailChangeToken={widgetsStates.emailChangeTokenAndPayload}
+                                    onSuccess={onPrimaryEmailChange}
                                 />
                             </>
                             :
