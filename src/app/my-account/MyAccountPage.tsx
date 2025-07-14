@@ -15,6 +15,8 @@ import { AppContext } from "../App";
 import { AuthenticatedAppContext } from "../AuthenticatedApp";
 import SendPrimaryEmailChangeMailForm from "./@components/SendPrimaryEmailChangeMailForm/SendPrimaryEmailChangeMailForm";
 import UpdatePrimaryEmailWithTokenForm from "./@components/UpdatePrimaryEmailWithTokenForm/UpdatePrimaryEmailWithTokenForm";
+import TimeoutButton from "../@components/TimeoutButton";
+import { addMinutes } from "date-fns";
 
 export default function MyAccountPage(): React.ReactElement {
 
@@ -46,6 +48,7 @@ export default function MyAccountPage(): React.ReactElement {
         emailChangeTokenAndPayload?: PrimaryEmailChangeTokenAndPayload,
         newPrimaryEmailAvailableForUse: boolean,
         showChangePrimaryEmailDrawer: boolean,
+        sendEmailConfirmationTimeoutUntil?: Date,
     }
 
     function PrimaryEmailSection(): React.ReactElement {
@@ -56,6 +59,7 @@ export default function MyAccountPage(): React.ReactElement {
             emailChangeTokenAndPayload: undefined,
             newPrimaryEmailAvailableForUse: true,
             showChangePrimaryEmailDrawer: false,
+            sendEmailConfirmationTimeoutUntil: undefined,
         })
 
         // Constants
@@ -88,6 +92,7 @@ export default function MyAccountPage(): React.ReactElement {
                         content: `E-mail enviado com sucesso para ${userData.primaryEmail}`,
                         duration: 3
                     })
+                    setWidgetsStates({ ...widgetsStates, loading: false, sendEmailConfirmationTimeoutUntil: addMinutes(new Date(), 1) })
                 })
                 .catch(e => {
                     console.error(e)
@@ -95,8 +100,6 @@ export default function MyAccountPage(): React.ReactElement {
                         content: `Ocorreu um erro inesperado ao enviar e-mail`,
                         duration: 3
                     })
-                })
-                .finally(() => {
                     setWidgetsStates({ ...widgetsStates, loading: false })
                 })
         }
@@ -115,7 +118,14 @@ export default function MyAccountPage(): React.ReactElement {
                 <Divider />
                 <Row justify="end">
                     <Space>
-                        <Button icon={<ClockCircleOutlined />} loading={widgetsStates.loading} onClick={sendEmailConfirmationMail}>Enviar confirmação de e-mail</Button>
+                        <TimeoutButton 
+                            icon={<ClockCircleOutlined />} 
+                            loading={widgetsStates.loading} 
+                            onClick={sendEmailConfirmationMail}
+                            timeoutUntil={widgetsStates.sendEmailConfirmationTimeoutUntil}
+                            >
+                                Enviar confirmação de e-mail
+                            </TimeoutButton>
                         <Button icon={<MailOutlined />} disabled={!emailConfirmed} onClick={() => setWidgetsStates({ ...widgetsStates, showChangePrimaryEmailDrawer: true })}>
                             Alterar e-mail primário
                         </Button>
