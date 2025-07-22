@@ -1,24 +1,40 @@
-import { Button, ButtonProps } from "antd";
-import Timer from "./Timer/Timer";
-import { useMemo, useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
+import { Button, ButtonProps } from "antd";
+import { useMemo, useState } from "react";
+import Timer, { TimerFormat } from "./Timer/Timer";
 
 interface TimeoutButtonProps extends ButtonProps {
+    
     /**
      * When defined, set the timeout that will make the button disabled
      */
     timeoutUntil?: Date,
+    /**
+     * The format applied to the timer
+     */
+    timerFormat?: TimerFormat,
 }
 
-export default function TimeoutButton({ children, onClick, timeoutUntil, ...otherProps }: TimeoutButtonProps) {
+export default function TimeoutButton({ children, onClick, timeoutUntil, timerFormat, disabled, ...otherProps }: TimeoutButtonProps) {
 
     const [now, setNow] = useState(Date.now())
 
-    
-
     const onTimeout = useMemo(() => {
-        return (timeoutUntil && (now - timeoutUntil.getTime() < 0))
-    }, [now])
+        return timeoutUntil !== undefined && (timeoutUntil.getTime() - now) > 0
+    }, [now, timeoutUntil])
+
+    
+    /**
+     * Handles disabled status for the button giving priority to 'onTimeout' prop
+     * @returns 
+     */
+    function checkDisabled() {
+        if (onTimeout) {
+            return true
+        }
+
+        return disabled
+    }
 
     function timeoutOnClickEvent(event: React.MouseEvent<HTMLElement>) {
         setNow(Date.now())
@@ -31,13 +47,13 @@ export default function TimeoutButton({ children, onClick, timeoutUntil, ...othe
             return <></>
         }
         return (
-            <Timer finishesAt={timeoutUntil} hideWhenFinished={true} />
+            <Timer finishesAt={timeoutUntil} format={timerFormat} hideWhenFinished={true} onTick={(now) => setNow(now)} />
         )
     }
 
     return (
         <Button
-            disabled={onTimeout}
+            disabled={checkDisabled()}
             icon={(onTimeout) ? <LoadingOutlined /> : undefined}
             onClick={timeoutOnClickEvent}
             {...otherProps}

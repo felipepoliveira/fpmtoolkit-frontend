@@ -9,6 +9,10 @@ import { PrimaryEmailChangeTokenAndPayload } from "../../../../types/backend-api
 import Link from "antd/es/typography/Link"
 import { EditOutlined } from "@ant-design/icons"
 import ApiError from "../../../../api/backend-api/api-error"
+import TimeoutButton from "../../../@components/TimeoutButton"
+import { dateFrom } from "../../../../commons/date"
+import TimeoutsStore from "../../../../store/timeouts"
+import { addMinutes } from "date-fns"
 
 /**
  * Props for SendPrimaryEmailChangeMailForm component
@@ -45,6 +49,7 @@ export default function SendPrimaryEmailChangeMailForm(props: SendPrimaryEmailCh
     // States and contexts
     const appContext = useContext(AppContext)
     const authAppContext = useContext(AuthenticatedAppContext)
+    const [sendEmailChangeTimeoutUntil, setSendEmailChangeTimeoutUntil] = useState<Date | undefined>(dateFrom(TimeoutsStore.get()?.sendPrimaryEmailChangeMail))
     const [sendPrimaryEmailChangeForm] = useForm<SendPrimaryEmailChangeMailFormType>()
     const [widgetsStates, setWidgetsStates] = useState({
         emailAvailability: 'unknown',
@@ -93,6 +98,7 @@ export default function SendPrimaryEmailChangeMailForm(props: SendPrimaryEmailCh
                             duration: 3
                         })
                         setWidgetsStates({ ...widgetsStates, emailSent: true, loading: false })
+                        setSendEmailChangeTimeoutUntil(addMinutes(new Date(), 1))
                         props.onSuccess(tokenAndPayload)
                     })
                     .catch((e) => {
@@ -134,9 +140,16 @@ export default function SendPrimaryEmailChangeMailForm(props: SendPrimaryEmailCh
                     />
                 </Form.Item>
                 <Form.Item label={null}>
-                    <Button type="primary" htmlType="submit" loading={widgetsStates.loading} size="middle" disabled={props.onSuccessState}>
-                        Enviar e-mail de chacagem
-                    </Button>
+                    <TimeoutButton 
+                        type="primary" 
+                        htmlType="submit" 
+                        loading={widgetsStates.loading} 
+                        disabled={props.onSuccessState}
+                        size="middle" 
+                        timeoutUntil={sendEmailChangeTimeoutUntil}
+                    >
+                        Enviar e-mail de checagem
+                    </TimeoutButton>
                 </Form.Item>
                 {
                     // (props.onReset && props.onSuccessState)

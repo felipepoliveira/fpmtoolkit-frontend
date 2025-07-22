@@ -17,6 +17,8 @@ import SendPrimaryEmailChangeMailForm from "./@components/SendPrimaryEmailChange
 import UpdatePrimaryEmailWithTokenForm from "./@components/UpdatePrimaryEmailWithTokenForm/UpdatePrimaryEmailWithTokenForm";
 import TimeoutButton from "../@components/TimeoutButton";
 import { addMinutes } from "date-fns";
+import { dateFrom } from "../../commons/date";
+import { useTimeoutsStore } from "../../store/timeouts";
 
 export default function MyAccountPage(): React.ReactElement {
 
@@ -48,7 +50,6 @@ export default function MyAccountPage(): React.ReactElement {
         emailChangeTokenAndPayload?: PrimaryEmailChangeTokenAndPayload,
         newPrimaryEmailAvailableForUse: boolean,
         showChangePrimaryEmailDrawer: boolean,
-        sendEmailConfirmationTimeoutUntil?: Date,
     }
 
     function PrimaryEmailSection(): React.ReactElement {
@@ -59,8 +60,8 @@ export default function MyAccountPage(): React.ReactElement {
             emailChangeTokenAndPayload: undefined,
             newPrimaryEmailAvailableForUse: true,
             showChangePrimaryEmailDrawer: false,
-            sendEmailConfirmationTimeoutUntil: undefined,
         })
+        const { timeouts, setTimeouts } = useTimeoutsStore()
 
         // Constants
         const emailConfirmed = userData.primaryEmailConfirmedAt != undefined
@@ -92,7 +93,8 @@ export default function MyAccountPage(): React.ReactElement {
                         content: `E-mail enviado com sucesso para ${userData.primaryEmail}`,
                         duration: 3
                     })
-                    setWidgetsStates({ ...widgetsStates, loading: false, sendEmailConfirmationTimeoutUntil: addMinutes(new Date(), 1) })
+                    setWidgetsStates({ ...widgetsStates, loading: false })
+                    setTimeouts({ ...timeouts, sendPrimaryEmailConfirmationMail: addMinutes(new Date(), 1).getTime() })
                 })
                 .catch(e => {
                     console.error(e)
@@ -122,7 +124,8 @@ export default function MyAccountPage(): React.ReactElement {
                             icon={<ClockCircleOutlined />} 
                             loading={widgetsStates.loading} 
                             onClick={sendEmailConfirmationMail}
-                            timeoutUntil={widgetsStates.sendEmailConfirmationTimeoutUntil}
+                            timeoutUntil={dateFrom(timeouts.sendPrimaryEmailConfirmationMail)}
+                            timerFormat="time-fit"
                             >
                                 Enviar confirmação de e-mail
                             </TimeoutButton>
