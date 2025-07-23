@@ -21,13 +21,13 @@ export function usePersistentQuery(persistentQueryParams: string[]): URLSearchPa
     return persistentUrlSearchParams
 }
 
-export function useRoleFeedbackText(params: {
-    roleCheckResult: boolean,
+export function useConditionalFeedbackText(params: {
+    condition: boolean,
     authorizedText?: string | undefined,
     forbiddenText?: string | undefined
 }): RoleFeedback {
     return {
-        hasRole: params.roleCheckResult,
-        text: (params.roleCheckResult) ? params.authorizedText : params.forbiddenText
+        hasRole: params.condition,
+        text: (params.condition) ? params.authorizedText : params.forbiddenText
     }
 }

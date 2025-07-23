@@ -20,7 +20,7 @@ import ReadContainer from "../../../@components/ReadContainer/ReadContainer"
 import RoleCheckbox from "../../../@components/RoleCheckbox/RoleCheckbox"
 import { AppContext } from "../../../App"
 import { AuthenticatedAppContext } from "../../../AuthenticatedApp"
-import { useRoleFeedbackText } from "../../../hooks"
+import { useConditionalFeedbackText } from "../../../hooks"
 import { SelectedOrganization, useSelectedOrganizationProvider } from "../hooks"
 
 // Store the amount of items per page on the tables
@@ -96,14 +96,14 @@ export default function OrganizationMembersPage(): React.ReactNode {
 
     }, [selectedOrganization])
 
-    const addMemberRoleFeedback = useRoleFeedbackText({
-        roleCheckResult: authAppContext.hasRole(["ROLE_ORG_ADMINISTRATOR"]),
+    const addMemberRoleFeedback = useConditionalFeedbackText({
+        condition: authAppContext.hasRole(["ROLE_ORG_ADMINISTRATOR"]),
         authorizedText: "Envia um novo convite para adicionar um membro na organização",
         forbiddenText: "Você não tem permissão para adicionar novos membros na organização"
     })
 
-    const manageMemberRoleFeedback = useRoleFeedbackText({
-        roleCheckResult: authAppContext.hasRole(["ROLE_ORG_MEMBER_ADMINISTRATOR"]),
+    const manageMemberRoleFeedback = useConditionalFeedbackText({
+        condition: authAppContext.hasRole(["ROLE_ORG_MEMBER_ADMINISTRATOR"]),
         forbiddenText: "Você não tem permissão para gerenciar membros na organização"
     })
 

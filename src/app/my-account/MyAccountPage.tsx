@@ -1,9 +1,9 @@
 import { ClockCircleOutlined, KeyOutlined, MailOutlined } from "@ant-design/icons";
-import { Alert, Button, Divider, Drawer, Form, Input, Row, Space } from "antd";
+import { Alert, Button, Divider, Drawer, Form, Input, Row, Space, Tooltip } from "antd";
 import { FormProps, useForm } from "antd/es/form/Form";
 import Paragraph from "antd/es/typography/Paragraph";
 import Title from "antd/es/typography/Title";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import AuthenticationService from "../../api/backend-api/authentication";
 import { AuthenticatedUserService } from "../../api/backend-api/me/auth-user";
 import { PrimaryEmailChangeTokenAndPayload, UserModel } from "../../types/backend-api/user";
@@ -16,15 +16,24 @@ import { AuthenticatedAppContext } from "../AuthenticatedApp";
 import SendPrimaryEmailChangeMailForm from "./@components/SendPrimaryEmailChangeMailForm/SendPrimaryEmailChangeMailForm";
 import UpdatePrimaryEmailWithTokenForm from "./@components/UpdatePrimaryEmailWithTokenForm/UpdatePrimaryEmailWithTokenForm";
 import TimeoutButton from "../@components/TimeoutButton";
-import { addMinutes } from "date-fns";
+import { addMinutes, intervalToDuration } from "date-fns";
 import { dateFrom } from "../../commons/date";
 import { useTimeoutsStore } from "../../store/timeouts";
+import { useConditionalFeedbackText } from "../hooks";
 
 export default function MyAccountPage(): React.ReactElement {
 
     const appContext = useContext(AppContext)
     const authAppContext = useContext(AuthenticatedAppContext)
     const [userData, setUserData] = useState(authAppContext.authenticatedUser().userData)
+
+
+    const primaryEmailConfirmedAt = useMemo(() => {
+        if (!userData.primaryEmailConfirmedAt) {
+            return undefined
+        }
+        return new Date(userData.primaryEmailConfirmedAt)
+    }, [userData])
 
     function resetUserDataFromAppContext() {
         setUserData(authAppContext.authenticatedUser().userData)
@@ -66,12 +75,33 @@ export default function MyAccountPage(): React.ReactElement {
         // Constants
         const emailConfirmed = userData.primaryEmailConfirmedAt != undefined
 
+        const recentlyConfirmedPrimaryEmail = useMemo(() => {
+
+            if (!primaryEmailConfirmedAt) {
+                return false
+            }
+
+            const daysInterval = intervalToDuration({ start: primaryEmailConfirmedAt, end: new Date() }).days
+            return daysInterval !== undefined && daysInterval <= 7
+        }, [])
+
+        const recentlyConfirmedPrimaryEmailFeedback = useConditionalFeedbackText({
+            condition: recentlyConfirmedPrimaryEmail,
+            authorizedText: 'Você confirmou seu e-mail primário recentemente',
+            forbiddenText: 'Faz muito tempo que confirmou seu e-mail primário. Confirme novamente sua posse para realizar esta operação'
+        })
+
         function PrimaryEmailConfirmationAlert(): React.ReactElement {
 
-            if (emailConfirmed) {
-                return (
-                    <Alert type="info" showIcon message={`E-mail confirmado`} />
-                )
+            if (emailConfirmed && recentlyConfirmedPrimaryEmail) {
+                return <Alert type="info" showIcon message={`E-mail confirmado`} />
+            }
+            else if (emailConfirmed) {
+                <Alert
+                    type="warning" showIcon
+                    message={`Faz muito tempo que confirmou a posse do seu e-mail. Algumas ações ficarão bloqueadas até que confirme novamente.`}
+                    style={{ marginTop: 8 }}
+                />
             }
             else {
                 return (
@@ -120,18 +150,25 @@ export default function MyAccountPage(): React.ReactElement {
                 <Divider />
                 <Row justify="end">
                     <Space>
-                        <TimeoutButton 
-                            icon={<ClockCircleOutlined />} 
-                            loading={widgetsStates.loading} 
+                        <TimeoutButton
+                            icon={<ClockCircleOutlined />}
+                            loading={widgetsStates.loading}
                             onClick={sendEmailConfirmationMail}
                             timeoutUntil={dateFrom(timeouts.sendPrimaryEmailConfirmationMail)}
                             timerFormat="time-fit"
-                            >
-                                Enviar confirmação de e-mail
-                            </TimeoutButton>
-                        <Button icon={<MailOutlined />} disabled={!emailConfirmed} onClick={() => setWidgetsStates({ ...widgetsStates, showChangePrimaryEmailDrawer: true })}>
-                            Alterar e-mail primário
-                        </Button>
+                        >
+                            Enviar confirmação de e-mail
+                        </TimeoutButton>
+                        <Tooltip
+                            title={recentlyConfirmedPrimaryEmailFeedback.text}
+                        >
+                            <Button
+                                icon={<MailOutlined />}
+                                disabled={!emailConfirmed || !recentlyConfirmedPrimaryEmailFeedback.hasRole}
+                                onClick={() => setWidgetsStates({ ...widgetsStates, showChangePrimaryEmailDrawer: true })}>
+                                Alterar e-mail primário
+                            </Button>
+                        </Tooltip>
                     </Space>
                 </Row>
                 <Drawer
