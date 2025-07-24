@@ -1,4 +1,4 @@
-import { LoadingOutlined, TeamOutlined } from "@ant-design/icons"
+import { LoadingOutlined, ProjectOutlined, TeamOutlined } from "@ant-design/icons"
 import { Layout, Menu, MenuProps, theme, Typography } from "antd"
 import Sider from "antd/es/layout/Sider"
 import { Content } from "antd/es/layout/layout"
@@ -34,7 +34,7 @@ export default function OrganizationHomePage(): React.ReactNode {
 
     // sider menu items
     const siderMenuItems: MenuProps['items'] = [
-        // { key: "/projects", label: "Projetos", onClick: () => navigate(`/o/${profileName}/projects`), icon: <ProjectOutlined /> },
+        { key: "/projects", label: "Projetos", onClick: () => navigate(`/o/${profileName}/projects`), icon: <ProjectOutlined /> },
         // { key: "/performance-analytics", label: "Performance", onClick: () => navigate(`/o/${profileName}/performance-analytics`), icon: <DashboardOutlined /> },
         { key: "/members", label: "Membros da organização", onClick: () => navigate(`/o/${profileName}/members`), icon: <TeamOutlined /> },
         // { key: "/configurations", label: "Configurações", onClick: () => navigate(`/o/${profileName}/configurations`), icon: <SettingOutlined /> },

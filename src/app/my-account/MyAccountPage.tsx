@@ -46,8 +46,7 @@ export default function MyAccountPage(): React.ReactElement {
     function ContactDataSection(): React.ReactElement {
         return (
             <Section id="sec-contact-data">
-                <Title level={3}>Dados de contato</Title>
-                <Paragraph>Dados de contato da sua conta</Paragraph>
+                <Title level={3}>Dados da conta</Title>
                 <Divider />
                 <Space></Space>
             </Section>
@@ -94,14 +93,19 @@ export default function MyAccountPage(): React.ReactElement {
         function PrimaryEmailConfirmationAlert(): React.ReactElement {
 
             if (emailConfirmed && recentlyConfirmedPrimaryEmail) {
-                return <Alert type="info" showIcon message={`E-mail confirmado`} />
+                return (
+                    <Alert type="info" showIcon message={`E-mail confirmado`} />
+                )
             }
             else if (emailConfirmed) {
-                <Alert
-                    type="warning" showIcon
-                    message={`Faz muito tempo que confirmou a posse do seu e-mail. Algumas ações ficarão bloqueadas até que confirme novamente.`}
-                    style={{ marginTop: 8 }}
-                />
+                return (
+                    <Alert
+                        type="warning" showIcon
+                        message={`Faz muito tempo que confirmou a posse do seu e-mail. Algumas ações ficarão bloqueadas até que confirme novamente.`}
+                        style={{ marginTop: 8 }}
+
+                    />
+                )
             }
             else {
                 return (
