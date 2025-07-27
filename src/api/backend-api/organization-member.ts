@@ -38,8 +38,8 @@ export const OrganizationMemberService = {
      * @param limit 
      * @returns 
      */
-    findByOrganization: async (organizationUuid: string, page: number, limit: number = 10): Promise<OrganizationMemberModel[]> => {
-        const queryParameters = `pagination=false&page=${page}&limit=${limit}`
+    findByOrganization: async (organizationUuid: string, page: number, limit: number = 10, queryField: String = ""): Promise<OrganizationMemberModel[]> => {
+        const queryParameters = `pagination=false&page=${page}&limit=${limit}&queryField=${queryField}`
         return  (await (BackendApi.get(`/api/organizations/${organizationUuid}/members?${queryParameters}`))).data
     },
 
@@ -60,8 +60,8 @@ export const OrganizationMemberService = {
      * @param limit 
      * @returns 
      */
-    paginationByOrganization: async (organizationUuid: string, page: number, limit: number = 10): Promise<PaginationMetadata> => {
-        const queryParameters = `pagination=true&page=${page}&limit=${limit}`
+    paginationByOrganization: async (organizationUuid: string, page: number, limit: number = 10, queryField: String = ""): Promise<PaginationMetadata> => {
+        const queryParameters = `pagination=true&page=${page}&limit=${limit}&queryField=${queryField}`
         return  (await (BackendApi.get(`/api/organizations/${organizationUuid}/members?${queryParameters}`))).data
     },
 

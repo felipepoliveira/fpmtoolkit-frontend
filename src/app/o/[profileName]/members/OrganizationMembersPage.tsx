@@ -1,5 +1,5 @@
 import { CrownOutlined, DeleteOutlined, EditOutlined, LoadingOutlined, MenuOutlined, SaveOutlined, SendOutlined, UserAddOutlined } from "@ant-design/icons"
-import { Badge, Button, CheckboxChangeEvent, Divider, Drawer, Dropdown, Empty, Form, Input, Modal, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
+import { Badge, Button, CheckboxChangeEvent, Col, Divider, Drawer, Dropdown, Empty, Form, Input, Modal, Row, Select, Skeleton, Space, Table, Tabs, theme, Tooltip, Typography } from "antd"
 import { ItemType } from "antd/es/breadcrumb/Breadcrumb"
 import { FormProps, useForm } from "antd/es/form/Form"
 import { ColumnType, TablePaginationConfig } from "antd/es/table"
@@ -15,6 +15,7 @@ import { I18nRegion } from "../../../../types/backend-api/i18n-region"
 import { getLabeledOrganizationMemberRole, getLabeledOrganizationMemberRoles, OrganizationMemberModel, OrganizationMemberRole } from "../../../../types/backend-api/organization-member"
 import { OrganizationMemberInviteModel } from "../../../../types/backend-api/organization-member-invite"
 import { PaginationMetadata, parsePaginationMetadataToAntTablePaginationConfig } from "../../../../types/backend-api/pagination"
+import DebouncedSearch from "../../../@components/DebouncedInput/DebounceSearch"
 import NavigationBar from "../../../@components/NavigationBar/NavigationBar"
 import ReadContainer from "../../../@components/ReadContainer/ReadContainer"
 import RoleCheckbox from "../../../@components/RoleCheckbox/RoleCheckbox"
@@ -67,6 +68,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
     const [showSetOrganizationMemberOwnerModal, setShowSetOrganizationMemberOwnerModal] = useState(false)
     // control the state of the members table
     const [members, setMembers] = useState<OrganizationMemberModel[] | undefined>(undefined)
+    const [membersQueryField, setMembersQueryField] = useState("")
     const [membersPagination, setMembersPagination] = useState<PaginationMetadata | undefined>(undefined)
     const [membersPage, setMembersPage] = useState<number>(1)
     const [selectedMember, setSelectedMember] = useState<OrganizationMemberModel | undefined>(undefined)
@@ -167,7 +169,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                 setPageState('error')
             })
 
-    }, [selectedOrganization])
+    }, [selectedOrganization, membersQueryField])
 
     // fetch the members of the organization using pagination
     useEffect(() => {
@@ -176,7 +178,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
             return
         }
 
-        OrganizationMemberService.findByOrganization(selectedOrganization.organization.uuid, membersPage, membersPagination.itemsPerPage)
+        OrganizationMemberService.findByOrganization(selectedOrganization.organization.uuid, membersPage, membersPagination.itemsPerPage, membersQueryField)
             .then((members: OrganizationMemberModel[]) => {
                 setMembers(members)
             })
@@ -688,39 +690,39 @@ export default function OrganizationMembersPage(): React.ReactNode {
 
             setLoading(false)
             OrganizationMemberService.changeOrganizationOwner(selectedOrganization.organization.uuid, selectedMember.uuid)
-            .then(updatedMember => {
-        
-                let newMembersList = [...members]
+                .then(updatedMember => {
 
-                // if the owner is on the list remove the organization owner mark on it
-                const ownerOnTheList = newMembersList.find(m => m.isOrganizationOwner)
-                if (ownerOnTheList) {
-                    newMembersList = mapConditionally(newMembersList, (m) => m.isOrganizationOwner, {...ownerOnTheList, isOrganizationOwner: false})
-                }
-                // set the target member as the organization owner
-                newMembersList = mapConditionally(newMembersList, (m) => m.uuid === updatedMember.uuid, updatedMember)
+                    let newMembersList = [...members]
 
-                // update state, close modal, show feedback
-                setMembers(newMembersList)
-                setShowSetOrganizationMemberOwnerModal(false)
+                    // if the owner is on the list remove the organization owner mark on it
+                    const ownerOnTheList = newMembersList.find(m => m.isOrganizationOwner)
+                    if (ownerOnTheList) {
+                        newMembersList = mapConditionally(newMembersList, (m) => m.isOrganizationOwner, { ...ownerOnTheList, isOrganizationOwner: false })
+                    }
+                    // set the target member as the organization owner
+                    newMembersList = mapConditionally(newMembersList, (m) => m.uuid === updatedMember.uuid, updatedMember)
 
-                appContext.message.success({
-                    content: 'Dono da organização alterado com sucesso', 
-                    duration: 2
+                    // update state, close modal, show feedback
+                    setMembers(newMembersList)
+                    setShowSetOrganizationMemberOwnerModal(false)
+
+                    appContext.message.success({
+                        content: 'Dono da organização alterado com sucesso',
+                        duration: 2
+                    })
+                    clearSelectedOrganizationCache()
+
                 })
-                clearSelectedOrganizationCache()
-                
-            })
-            .catch(e => {
-                console.error(e)
-                appContext.message.error({
-                    content: 'Ocorreu um erro inesperado ao trocar dono da organização',
-                    duration: 3
+                .catch(e => {
+                    console.error(e)
+                    appContext.message.error({
+                        content: 'Ocorreu um erro inesperado ao trocar dono da organização',
+                        duration: 3
+                    })
                 })
-            })
-            .finally(() => {
-                setLoading(false)
-            })
+                .finally(() => {
+                    setLoading(false)
+                })
         }
 
         return (
@@ -756,21 +758,31 @@ export default function OrganizationMembersPage(): React.ReactNode {
                 >
                     <TabPane tab={<ActiveMembersTabTitleWithCounter />} key="activeMembers" forceRender={true}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '26px' }}>
-                            <Space>
-                                <Tooltip title={addMemberRoleFeedback.text}>
-                                    <Button icon={<UserAddOutlined />} type="primary"
-                                        disabled={!addMemberRoleFeedback.hasRole}
-                                        onClick={() => {
-                                            setSelectedTab('pendingInvites')
-                                            sendInviteButtonRef.current?.focus()
-                                            setTimeout(() => {
-                                                setShowInviteDrawer(true)
-                                            }, 600);
-                                        }}>
-                                        Adicionar membro
-                                    </Button>
-                                </Tooltip>
-                            </Space>
+                            <Row gutter={16}>
+                                <Col>
+                                    <DebouncedSearch
+                                        debounceAfter={800} 
+                                        onDebouncedChange={(event) => setMembersQueryField(event.value)}
+                                    />
+                                </Col>
+                                <Col>
+                                    <Space>
+                                        <Tooltip title={addMemberRoleFeedback.text}>
+                                            <Button icon={<UserAddOutlined />} type="primary"
+                                                disabled={!addMemberRoleFeedback.hasRole}
+                                                onClick={() => {
+                                                    setSelectedTab('pendingInvites')
+                                                    sendInviteButtonRef.current?.focus()
+                                                    setTimeout(() => {
+                                                        setShowInviteDrawer(true)
+                                                    }, 600);
+                                                }}>
+                                                Adicionar membro
+                                            </Button>
+                                        </Tooltip>
+                                    </Space>
+                                </Col>
+                            </Row>
                         </div>
                         {
                             (members === undefined || membersPagination === undefined)
