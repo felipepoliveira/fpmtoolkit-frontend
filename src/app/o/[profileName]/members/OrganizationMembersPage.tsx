@@ -761,7 +761,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
                             <Row gutter={16}>
                                 <Col>
                                     <DebouncedSearch
-                                        debounceAfter={800} 
+                                        debounceAfter={640} 
                                         onDebouncedChange={(event) => setMembersQueryField(event.value)}
                                     />
                                 </Col>

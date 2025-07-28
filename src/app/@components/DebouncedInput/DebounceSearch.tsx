@@ -30,7 +30,7 @@ export default function DebouncedSearch({ debounceAfter, loading, onChange, onDe
                 value: value
             })
             setIsDeboucing(false)
-        }, debounceAfter)
+        },debounceAfter)
         
         return () => {
             console.log("Clearing debounce")
