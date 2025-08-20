@@ -17,7 +17,8 @@ import OrganizationMembersPage from './o/[profileName]/members/OrganizationMembe
 import MyAccountPage from './my-account/MyAccountPage'
 import JoinOrganizationPage from './join-organization/JoinOrganizationPage'
 import ConfirmEmailPage from './confirm-email/ConfirmEmailPage'
-import ProjectsPage from './o/[profileName]/projects/ProjectsPage'
+import OrganizationProjectsListPage from './o/[profileName]/projects/OrganizationProjectsListPage'
+import ProjectHomePage from './o/[profileName]/p/[profileName]/ProjectHomePage'
 
 
 
@@ -87,7 +88,8 @@ function App() {
             <Route path='/my-account' element={<MyAccountPage />} />
             <Route path='/o/:profileName' element={<OrganizationHomePage />} />
             <Route path='/o/:profileName/members' element={<OrganizationMembersPage />} />
-            <Route path='/o/:profileName/projects' element={<ProjectsPage />} />
+            <Route path='/o/:profileName/p/:projectProfileName' element={<ProjectHomePage />} />
+            <Route path='/o/:profileName/projects' element={<OrganizationProjectsListPage />} />
             <Route path='/organizations/create' element={<CreateOrganizationPage />} />
           </Route>
 

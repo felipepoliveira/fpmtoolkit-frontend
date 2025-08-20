@@ -753,6 +753,7 @@ export default function OrganizationMembersPage(): React.ReactNode {
             <NavigationBar title="Membros da organização" returnUrl={`/o/${profileName}`} breadcrumbs={breadcrumbs} />
             <ReadContainer>
                 <Tabs
+                
                     activeKey={selectedTab}
                     onChange={(tab) => setSelectedTab(tab as SelectedTab)}
                 >

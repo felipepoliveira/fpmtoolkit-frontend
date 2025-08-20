@@ -6,6 +6,10 @@ export interface PaginationMetadata {
      */
     itemsPerPage: number,
     /**
+     * Store the number of pages
+     */
+    totalPages: number,
+    /**
      * The total number of records in the database
      */
     totalRecords: number,
@@ -13,6 +17,15 @@ export interface PaginationMetadata {
      * The current page of the pagination
      */
     currentPage: number,
+}
+
+export function mockPaginationMetadata(itemsPerPage: number): PaginationMetadata {
+    return {
+        currentPage: 1,
+        itemsPerPage,
+        totalPages: 1,
+        totalRecords: 0
+    }
 }
 
 export function parsePaginationMetadataToAntTablePaginationConfig(

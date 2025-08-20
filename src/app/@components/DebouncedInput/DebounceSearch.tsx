@@ -33,7 +33,6 @@ export default function DebouncedSearch({ debounceAfter, loading, onChange, onDe
         },debounceAfter)
         
         return () => {
-            console.log("Clearing debounce")
             clearInterval(timeoutHandler)
         }
     }, [value])
